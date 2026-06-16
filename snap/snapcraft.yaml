@@ -24,6 +24,18 @@ parts:
     stage-packages:
       - libgtk-3-0
       - libxkbcommon0
+      - libxcb1
+      - libxcb-render0
+      - libxcb-shape0
+      - libxcb-xfixes0
+      - libx11-6
+      - libxrandr2
+      - libxi6
+      - libxcursor1
+      - libvulkan1
+      - libgl1
+      - libegl1
+      - mesa-vulkan-drivers
 
   desktop-file:
     plugin: dump
@@ -36,6 +48,8 @@ apps:
   tincta:
     command: bin/tincta
     desktop: usr/share/applications/tincta.desktop
+    environment:
+      WINIT_UNIX_BACKEND: x11
     plugs:
       - home
       - removable-media
@@ -44,3 +58,4 @@ apps:
       - x11
       - wayland
       - opengl
+      - hardware-observe
