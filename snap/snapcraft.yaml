@@ -25,9 +25,17 @@ parts:
       - libgtk-3-0
       - libxkbcommon0
 
+  desktop-file:
+    plugin: dump
+    source: snap/gui
+    organize:
+      tincta.desktop: usr/share/applications/tincta.desktop
+      tincta.png: usr/share/icons/hicolor/256x256/apps/tincta.png
+
 apps:
   tincta:
     command: bin/tincta
+    desktop: usr/share/applications/tincta.desktop
     plugs:
       - home
       - removable-media
