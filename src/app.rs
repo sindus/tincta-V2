@@ -246,7 +246,11 @@ impl Application for TinctaApp {
             }
             Message::Sidebar(msg) => match self.sidebar.update(msg) {
                 SidebarAction::OpenFile(path) => {
-                    Command::perform(read_file(path), Message::FileOpened)
+                    if self.current_file.as_ref() == Some(&path) {
+                        Command::none()
+                    } else {
+                        Command::perform(read_file(path), Message::FileOpened)
+                    }
                 }
                 SidebarAction::CloseFile(path) => {
                     if self.current_file.as_ref() == Some(&path) {
