@@ -1,5 +1,5 @@
 name: tincta
-version: '0.1.0'
+version: '0.2.0'
 summary: A fast, stable, cross-platform text editor
 description: |
   Tincta is a fast, stable text editor with syntax highlighting for 60+
@@ -7,7 +7,7 @@ description: |
   (English and French). Compatible with Ubuntu, Debian, and other Linux distros.
 
 grade: stable
-confinement: strict
+confinement: classic
 base: core22
 
 architectures:
@@ -21,21 +21,6 @@ parts:
       - libgtk-3-dev
       - libxkbcommon-dev
       - libvulkan-dev
-    stage-packages:
-      - libgtk-3-0
-      - libxkbcommon0
-      - libxcb1
-      - libxcb-render0
-      - libxcb-shape0
-      - libxcb-xfixes0
-      - libx11-6
-      - libxrandr2
-      - libxi6
-      - libxcursor1
-      - libvulkan1
-      - libgl1
-      - libegl1
-      - mesa-vulkan-drivers
 
   desktop-file:
     plugin: dump
@@ -50,12 +35,3 @@ apps:
     desktop: usr/share/applications/tincta.desktop
     environment:
       WINIT_UNIX_BACKEND: x11
-    plugs:
-      - home
-      - removable-media
-      - desktop
-      - desktop-legacy
-      - x11
-      - wayland
-      - opengl
-      - hardware-observe

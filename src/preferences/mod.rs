@@ -1,9 +1,9 @@
 use iced::{
-    widget::{checkbox, column, container, row, scrollable, slider, text},
+    widget::{button, checkbox, column, container, row, scrollable, slider, text, Space},
     Element, Length,
 };
 
-use crate::{app::Message, config::Config};
+use crate::{app::Message, config::Config, theme};
 
 #[derive(Debug, Clone)]
 pub enum PreferencesMessage {
@@ -108,12 +108,28 @@ impl PreferencesState {
         }
     }
 
-    pub fn view(&self) -> Element<Message> {
-        let section = |label: String| text(label).size(13);
+    pub fn view(&self, dark: bool) -> Element<Message> {
+        let muted = theme::muted_text(dark);
+        let section = |label: String| text(label).size(11).style(muted);
+
+        let close = button(text("✕").size(12))
+            .padding([4, 8])
+            .on_press(Message::TogglePreferences)
+            .style(iced::theme::Button::custom(theme::GhostButton {
+                dark,
+                active: false,
+            }));
+
+        let header = row![
+            text(t!("prefs.editor").to_string()).size(14),
+            Space::with_width(Length::Fill),
+            close,
+        ];
 
         container(
             scrollable(
                 column![
+                    header,
                     section(t!("prefs.editor").to_string()),
                     row![
                         text(t!("prefs.font_size")).size(12),
@@ -124,25 +140,32 @@ impl PreferencesState {
                     ]
                     .spacing(8),
                     checkbox(t!("prefs.show_line_numbers"), self.show_line_numbers)
+                        .text_size(13)
                         .on_toggle(|v| Message::Preferences(PreferencesMessage::ShowLineNumbersToggled(v))),
                     checkbox(t!("prefs.word_wrap"), self.word_wrap)
+                        .text_size(13)
                         .on_toggle(|v| Message::Preferences(PreferencesMessage::WordWrapToggled(v))),
                     checkbox(t!("prefs.auto_indent"), self.auto_indent)
+                        .text_size(13)
                         .on_toggle(|v| Message::Preferences(PreferencesMessage::AutoIndentToggled(v))),
                     checkbox(t!("prefs.autocomplete_brackets"), self.autocomplete_brackets)
+                        .text_size(13)
                         .on_toggle(|v| Message::Preferences(PreferencesMessage::AutocompleteBracketsToggled(v))),
                     checkbox(t!("prefs.autocomplete_quotes"), self.autocomplete_quotes)
+                        .text_size(13)
                         .on_toggle(|v| Message::Preferences(PreferencesMessage::AutocompleteQuotesToggled(v))),
                     checkbox(t!("prefs.highlight_current_line"), self.highlight_current_line)
+                        .text_size(13)
                         .on_toggle(|v| Message::Preferences(PreferencesMessage::HighlightCurrentLineToggled(v))),
                 ]
-                .spacing(12)
-                .padding(16)
+                .spacing(14)
+                .padding(18)
                 .width(Length::Fill)
             )
         )
-        .width(320)
+        .width(300)
         .height(Length::Fill)
+        .style(theme::panel(dark))
         .into()
     }
 }

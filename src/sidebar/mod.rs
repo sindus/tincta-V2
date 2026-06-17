@@ -1,15 +1,27 @@
 use iced::{
-    widget::{column, container, scrollable, text, button},
+    widget::{button, column, container, scrollable, text, Space},
     Element, Length,
 };
 use std::path::PathBuf;
 
 use crate::app::Message;
+use crate::theme;
 
 #[derive(Debug, Clone)]
 pub enum SidebarMessage {
     OpenFile(PathBuf),
     RemoveFile(usize),
+    RequestSave(PathBuf),
+    RequestSaveAs,
+}
+
+/// What the app should do in response to a sidebar interaction.
+pub enum SidebarAction {
+    None,
+    OpenFile(PathBuf),
+    CloseFile(PathBuf),
+    SaveFile(PathBuf),
+    SaveFileAs,
 }
 
 pub struct SidebarState {
@@ -32,23 +44,33 @@ impl SidebarState {
         self.selected = self.files.len().checked_sub(1);
     }
 
-    pub fn update(&mut self, msg: SidebarMessage) -> Option<PathBuf> {
+    pub fn update(&mut self, msg: SidebarMessage) -> SidebarAction {
         match msg {
             SidebarMessage::OpenFile(path) => {
                 self.selected = self.files.iter().position(|p| p == &path);
-                Some(path)
+                SidebarAction::OpenFile(path)
             }
             SidebarMessage::RemoveFile(idx) => {
                 if idx < self.files.len() {
-                    self.files.remove(idx);
+                    let path = self.files.remove(idx);
+                    let was_selected = self.selected == Some(idx);
                     self.selected = None;
+                    if was_selected {
+                        return SidebarAction::CloseFile(path);
+                    }
                 }
-                None
+                SidebarAction::None
             }
+            SidebarMessage::RequestSave(path) => SidebarAction::SaveFile(path),
+            SidebarMessage::RequestSaveAs => SidebarAction::SaveFileAs,
         }
     }
 
-    pub fn view(&self) -> Element<Message> {
+    pub fn view(&self, dark: bool, current_file: &Option<PathBuf>) -> Element<Message> {
+        let lbl_close = t!("sidebar.close").to_string();
+        let lbl_save = t!("sidebar.save").to_string();
+        let lbl_save_as = t!("sidebar.save_as").to_string();
+
         let items: Vec<Element<Message>> = self
             .files
             .iter()
@@ -59,38 +81,101 @@ impl SidebarState {
                     .and_then(|n| n.to_str())
                     .unwrap_or("?")
                     .to_string();
-                let _is_selected = self.selected == Some(i);
+                let is_selected = self.selected == Some(i);
+                let is_active = current_file.as_ref() == Some(path);
                 let path_clone = path.clone();
 
-                button(text(name).size(13))
+                let row_button = button(text(name).size(13))
                     .on_press(Message::Sidebar(SidebarMessage::OpenFile(path_clone)))
                     .width(Length::Fill)
+                    .padding([6, 10])
+                    .style(iced::theme::Button::custom(theme::SidebarRow {
+                        dark,
+                        selected: is_selected,
+                    }));
+
+                // Build context menu labels (owned Strings for 'static closure)
+                let lbl_close = lbl_close.clone();
+                let lbl_save = lbl_save.clone();
+                let lbl_save_as = lbl_save_as.clone();
+                let path_for_save = path.clone();
+                let path_for_close = path.clone();
+
+                iced_aw::ContextMenu::new(row_button, move || {
+                    let ctx_item =
+                        |label: String, msg: Option<Message>| -> Element<'static, Message> {
+                            let mut btn = button(text(label).size(13))
+                                .padding([6, 10])
+                                .width(Length::Fixed(160.0))
+                                .style(iced::theme::Button::custom(theme::GhostButton {
+                                    dark,
+                                    active: false,
+                                }));
+                            if let Some(m) = msg {
+                                btn = btn.on_press(m);
+                            }
+                            btn.into()
+                        };
+
+                    container(
+                        column![
+                            ctx_item(
+                                lbl_close.clone(),
+                                Some(Message::Sidebar(SidebarMessage::RemoveFile(i))),
+                            ),
+                            ctx_item(
+                                lbl_save.clone(),
+                                is_active.then(|| {
+                                    Message::Sidebar(SidebarMessage::RequestSave(
+                                        path_for_save.clone(),
+                                    ))
+                                }),
+                            ),
+                            ctx_item(
+                                lbl_save_as.clone(),
+                                is_active
+                                    .then(|| Message::Sidebar(SidebarMessage::RequestSaveAs)),
+                            ),
+                        ]
+                        .spacing(2)
+                        .padding(6),
+                    )
+                    .style(theme::card(dark))
                     .into()
+                })
+                .into()
             })
             .collect();
 
         let file_list = if items.is_empty() {
-            column![text(t!("sidebar.no_files")).size(12)]
+            column![text(t!("sidebar.no_files")).size(12).style(theme::muted_text(dark))]
         } else {
             column(items).spacing(2)
         };
 
+        let header = Space::with_height(0); // placeholder to keep layout identical
+
+        let _ = header; // suppress unused warning
+
         container(
             scrollable(
                 column![
-                    text(t!("sidebar.files")).size(12),
+                    text(t!("sidebar.files")).size(11).style(theme::muted_text(dark)),
                     file_list,
                 ]
-                .spacing(8)
-                .padding(8)
+                .spacing(10)
+                .padding(10),
             )
-            .height(Length::Fill)
+            .height(Length::Fill),
         )
-        .width(200)
+        .width(220)
         .height(Length::Fill)
+        .style(theme::panel(dark))
         .into()
     }
 }
+
+fn _action_button_unused() {} // dead code suppressor noop
 
 #[cfg(test)]
 mod tests {

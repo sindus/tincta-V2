@@ -54,6 +54,7 @@ impl EditorState {
         container(editor)
             .width(Length::Fill)
             .height(Length::Fill)
+            .padding([8, 14])
             .into()
     }
 }
@@ -87,64 +88,21 @@ fn extension_to_token(ext: &str) -> Option<&'static str> {
     }
 }
 
-pub mod toolbar {
-    use iced::{
-        widget::{button, row, text, Space},
-        Element, Length,
-    };
-
-    use crate::app::Message;
-    use crate::config::Config;
-
-    pub fn view(config: &Config) -> Element<Message> {
-        let dark_label = if config.dark_mode { "☀ Light" } else { "☾ Dark" };
-
-        row![
-            button(text(t!("toolbar.new").to_string()).size(13))
-                .on_press(Message::NewFile)
-                .padding([4, 10]),
-            button(text(t!("toolbar.open").to_string()).size(13))
-                .on_press(Message::OpenFile)
-                .padding([4, 10]),
-            button(text(t!("toolbar.save").to_string()).size(13))
-                .on_press(Message::SaveFile)
-                .padding([4, 10]),
-            button(text(t!("toolbar.close").to_string()).size(13))
-                .on_press(Message::CloseFile)
-                .padding([4, 10]),
-            Space::with_width(Length::Fill),
-            button(text(t!("toolbar.search").to_string()).size(13))
-                .on_press(Message::ToggleSearch)
-                .padding([4, 10]),
-            button(text(t!("toolbar.sidebar").to_string()).size(13))
-                .on_press(Message::ToggleSidebar)
-                .padding([4, 10]),
-            button(text(dark_label).size(13))
-                .on_press(Message::ThemeChanged(!config.dark_mode))
-                .padding([4, 10]),
-            button(text(t!("toolbar.preferences").to_string()).size(13))
-                .on_press(Message::TogglePreferences)
-                .padding([4, 10]),
-        ]
-        .spacing(4)
-        .padding([6, 8])
-        .into()
-    }
-}
-
 pub mod statusbar {
     use iced::{
-        widget::{row, text, Space},
+        widget::{container, row, text, Space},
         Element, Length,
     };
 
     use crate::app::Message;
+    use crate::theme;
     use std::path::PathBuf;
 
     pub fn view<'a>(
         status: &'a str,
         current_file: &'a Option<PathBuf>,
         is_dirty: bool,
+        dark: bool,
     ) -> Element<'a, Message> {
         let file_info = current_file
             .as_ref()
@@ -153,14 +111,22 @@ pub mod statusbar {
             .unwrap_or_else(|| t!("status.no_file").to_string());
 
         let dirty_indicator = if is_dirty { " •" } else { "" };
+        let muted = theme::muted_text(dark);
 
-        row![
-            text(status).size(12),
+        let bar = row![
+            text(status).size(11).style(muted),
             Space::with_width(Length::Fill),
-            text(format!("{}{}", file_info, dirty_indicator)).size(12),
+            text(format!("{}{}", file_info, dirty_indicator))
+                .size(11)
+                .style(if is_dirty {
+                    theme::accent_color()
+                } else {
+                    muted
+                }),
         ]
-        .padding([4, 8])
-        .into()
+        .padding([5, 10]);
+
+        container(bar).width(Length::Fill).style(theme::bar(dark)).into()
     }
 }
 

@@ -1,10 +1,11 @@
 use iced::{
-    widget::{button, container, row, text, text_input},
+    widget::{button, container, row, text, text_input, Space},
     Element, Length,
 };
 use regex::Regex;
 
 use crate::app::Message;
+use crate::theme;
 
 #[derive(Debug, Clone)]
 pub enum SearchMessage {
@@ -110,15 +111,11 @@ impl SearchState {
         }
     }
 
-    pub fn view(&self) -> Element<Message> {
-        let _error_text: Vec<Element<Message>> = if let Some(ref e) = self.last_error {
-            vec![text(e.as_str()).size(11).into()]
-        } else {
-            vec![]
-        };
-
+    pub fn view(&self, dark: bool) -> Element<Message> {
         let count_label = if self.match_count > 0 {
             format!("{} {}", self.match_count, t!("search.matches"))
+        } else if let Some(ref e) = self.last_error {
+            e.clone()
         } else {
             String::new()
         };
@@ -127,27 +124,38 @@ impl SearchState {
         let find_label = t!("search.find").to_string();
         let replace_all_label = t!("search.replace_all").to_string();
 
-        container(
-            row![
-                text_input(find_placeholder.as_str(), &self.query)
-                    .on_input(|v| Message::Search(SearchMessage::QueryChanged(v)))
-                    .width(200),
-                text_input(replace_placeholder.as_str(), &self.replacement)
-                    .on_input(|v| Message::Search(SearchMessage::ReplaceChanged(v)))
-                    .width(200),
-                button(text(find_label).size(12))
-                    .on_press(Message::Search(SearchMessage::Find)),
-                button(text(replace_all_label).size(12))
-                    .on_press(Message::Search(SearchMessage::ReplaceAll)),
-                text(count_label).size(12),
-                button(text("✕").size(12))
-                    .on_press(Message::ToggleSearch),
-            ]
-            .spacing(6)
-            .padding([4, 8])
-        )
-        .width(Length::Fill)
-        .into()
+        let action = |label: String, message: Message| {
+            button(text(label).size(12))
+                .padding([4, 10])
+                .on_press(message)
+                .style(iced::theme::Button::custom(theme::GhostButton {
+                    dark,
+                    active: false,
+                }))
+        };
+
+        let bar = row![
+            text_input(find_placeholder.as_str(), &self.query)
+                .on_input(|v| Message::Search(SearchMessage::QueryChanged(v)))
+                .size(13)
+                .width(220),
+            text_input(replace_placeholder.as_str(), &self.replacement)
+                .on_input(|v| Message::Search(SearchMessage::ReplaceChanged(v)))
+                .size(13)
+                .width(220),
+            action(find_label, Message::Search(SearchMessage::Find)),
+            action(
+                replace_all_label,
+                Message::Search(SearchMessage::ReplaceAll)
+            ),
+            text(count_label).size(12).style(theme::muted_text(dark)),
+            Space::with_width(Length::Fill),
+            action("✕".to_string(), Message::ToggleSearch),
+        ]
+        .spacing(8)
+        .padding([6, 10]);
+
+        container(bar).width(Length::Fill).style(theme::bar(dark)).into()
     }
 }
 
