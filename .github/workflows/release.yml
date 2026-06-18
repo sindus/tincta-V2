@@ -67,7 +67,7 @@ jobs:
           mv tincta-*.tar.gz ${{ github.workspace }}/
       - name: Build DEB
         run: |
-          cargo install cargo-deb
+          cargo install --force cargo-deb
           cargo deb
           cp target/debian/*.deb ${{ github.workspace }}/
       - uses: actions/upload-artifact@v4
@@ -82,15 +82,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install snap build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libxkbcommon-dev libvulkan-dev
       - uses: snapcore/action-build@v1
         id: build-snap
-        with:
-          snapcraft-args: --destructive-mode
-          snapcraft-channel: 8.x/stable
       - uses: snapcore/action-publish@v1
         env:
           SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
