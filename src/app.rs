@@ -82,6 +82,18 @@ pub enum Message {
     StartCaptureShortcut(ShortcutTarget),
     // Deferred cursor move after autocomplete pair insertion (layout must run first to shape buffer)
     MoveCursorLeft,
+    // Line-level editing
+    DuplicateLine,
+    MoveLineUp,
+    MoveLineDown,
+    ToggleComment,
+    DeleteLine,
+    IndentSelection,
+    DedentLine,
+    // Recent files
+    OpenRecentFile(PathBuf),
+    // Deferred cursor line restore after with_text() (layout must run first)
+    RestoreCursorLine(usize),
 }
 
 pub struct TinctaApp {
@@ -270,11 +282,16 @@ impl Application for TinctaApp {
             }
             Message::InsertTab => {
                 if !self.show_search && !self.show_preferences {
+                    if self.editor.content.selection().is_some() {
+                        return self.update(Message::IndentSelection);
+                    }
                     let text = if self.config.use_spaces {
                         " ".repeat(self.config.tab_width)
                     } else {
                         "\t".to_string()
                     };
+                    self.push_undo();
+                    self.undo_new_group = true;
                     self.editor.content.perform(text_editor::Action::Edit(
                         text_editor::Edit::Paste(std::sync::Arc::new(text)),
                     ));
@@ -326,8 +343,13 @@ impl Application for TinctaApp {
                             .to_string();
                         self.editor.set_language_by_extension(&ext);
                         self.sidebar.add_file(path.clone());
+                        self.config.add_recent(&path);
+                        self.config.save();
                         self.current_file = Some(path);
                         self.is_dirty = false;
+                        self.undo_stack.clear();
+                        self.redo_stack.clear();
+                        self.undo_new_group = true;
                         self.status_message = t!("status.file_opened").to_string();
                     }
                     Err(e) => {
@@ -366,6 +388,8 @@ impl Application for TinctaApp {
                             .unwrap_or("")
                             .to_string();
                         self.editor.set_language_by_extension(&ext);
+                        self.config.add_recent(&path);
+                        self.config.save();
                         self.current_file = Some(path);
                         self.is_dirty = false;
                         self.status_message = t!("status.file_saved").to_string();
@@ -690,6 +714,11 @@ impl Application for TinctaApp {
                         ShortcutTarget::Quit => self.config.shortcuts.quit = sc,
                         ShortcutTarget::Undo => self.config.shortcuts.undo = sc,
                         ShortcutTarget::Redo => self.config.shortcuts.redo = sc,
+                        ShortcutTarget::DuplicateLine => self.config.shortcuts.duplicate_line = sc,
+                        ShortcutTarget::MoveLineUp => self.config.shortcuts.move_line_up = sc,
+                        ShortcutTarget::MoveLineDown => self.config.shortcuts.move_line_down = sc,
+                        ShortcutTarget::ToggleComment => self.config.shortcuts.toggle_comment = sc,
+                        ShortcutTarget::DeleteLine => self.config.shortcuts.delete_line = sc,
                     }
                     self.config.save();
                     self.overlay = ActiveOverlay::Shortcuts { capturing: None };
@@ -706,6 +735,11 @@ impl Application for TinctaApp {
                 let sh = &self.config.shortcuts;
                 let msg = if sc_check(&sh.undo) { Some(Message::Undo) }
                     else if sc_check(&sh.redo) { Some(Message::Redo) }
+                    else if sc_check(&sh.duplicate_line) { Some(Message::DuplicateLine) }
+                    else if sc_check(&sh.move_line_up) { Some(Message::MoveLineUp) }
+                    else if sc_check(&sh.move_line_down) { Some(Message::MoveLineDown) }
+                    else if sc_check(&sh.toggle_comment) { Some(Message::ToggleComment) }
+                    else if sc_check(&sh.delete_line) { Some(Message::DeleteLine) }
                     else if sc_check(&sh.save_as) { Some(Message::SaveFileAs) }
                     else if sc_check(&sh.new_file) { Some(Message::NewFile) }
                     else if sc_check(&sh.save_file) { Some(Message::SaveFile) }
@@ -719,6 +753,170 @@ impl Application for TinctaApp {
                     else if sc_check(&sh.quit) { Some(Message::Quit) }
                     else { None };
                 if let Some(m) = msg { self.update(m) } else { Command::none() }
+            }
+            Message::DuplicateLine => {
+                if !self.show_search && !self.show_preferences {
+                    self.push_undo();
+                    let text = self.editor.content.text();
+                    let (line_idx, _) = self.editor.content.cursor_position();
+                    let new_text = duplicate_line(&text, line_idx);
+                    let lang = self.editor.language.clone();
+                    self.editor.content = text_editor::Content::with_text(&new_text);
+                    self.editor.language = lang;
+                    self.is_dirty = true;
+                    self.undo_new_group = true;
+                    let target = line_idx + 1;
+                    return Command::perform(async move { target }, Message::RestoreCursorLine);
+                }
+                Command::none()
+            }
+            Message::MoveLineUp => {
+                if !self.show_search && !self.show_preferences {
+                    self.push_undo();
+                    let text = self.editor.content.text();
+                    let (line_idx, _) = self.editor.content.cursor_position();
+                    let (new_text, new_line) = move_line(&text, line_idx, true);
+                    let lang = self.editor.language.clone();
+                    self.editor.content = text_editor::Content::with_text(&new_text);
+                    self.editor.language = lang;
+                    self.is_dirty = true;
+                    self.undo_new_group = true;
+                    return Command::perform(async move { new_line }, Message::RestoreCursorLine);
+                }
+                Command::none()
+            }
+            Message::MoveLineDown => {
+                if !self.show_search && !self.show_preferences {
+                    self.push_undo();
+                    let text = self.editor.content.text();
+                    let (line_idx, _) = self.editor.content.cursor_position();
+                    let (new_text, new_line) = move_line(&text, line_idx, false);
+                    let lang = self.editor.language.clone();
+                    self.editor.content = text_editor::Content::with_text(&new_text);
+                    self.editor.language = lang;
+                    self.is_dirty = true;
+                    self.undo_new_group = true;
+                    return Command::perform(async move { new_line }, Message::RestoreCursorLine);
+                }
+                Command::none()
+            }
+            Message::ToggleComment => {
+                if !self.show_search && !self.show_preferences {
+                    self.push_undo();
+                    let text = self.editor.content.text();
+                    let (line_idx, _) = self.editor.content.cursor_position();
+                    let prefix = comment_prefix(self.editor.language.as_deref());
+                    let new_text = toggle_comment(&text, line_idx, prefix);
+                    let lang = self.editor.language.clone();
+                    self.editor.content = text_editor::Content::with_text(&new_text);
+                    self.editor.language = lang;
+                    self.is_dirty = true;
+                    self.undo_new_group = true;
+                    return Command::perform(async move { line_idx }, Message::RestoreCursorLine);
+                }
+                Command::none()
+            }
+            Message::DeleteLine => {
+                if !self.show_search && !self.show_preferences {
+                    self.push_undo();
+                    let text = self.editor.content.text();
+                    let (line_idx, _) = self.editor.content.cursor_position();
+                    let (new_text, new_line) = delete_line_op(&text, line_idx);
+                    let lang = self.editor.language.clone();
+                    self.editor.content = text_editor::Content::with_text(&new_text);
+                    self.editor.language = lang;
+                    self.is_dirty = true;
+                    self.undo_new_group = true;
+                    return Command::perform(async move { new_line }, Message::RestoreCursorLine);
+                }
+                Command::none()
+            }
+            Message::IndentSelection => {
+                if !self.show_search && !self.show_preferences {
+                    if let Some(selected) = self.editor.content.selection() {
+                        let indent = if self.config.use_spaces {
+                            " ".repeat(self.config.tab_width)
+                        } else {
+                            "\t".to_string()
+                        };
+                        self.push_undo();
+                        let new_sel = indent_text(&selected, &indent);
+                        self.editor.content.perform(text_editor::Action::Edit(
+                            text_editor::Edit::Paste(std::sync::Arc::new(new_sel)),
+                        ));
+                        self.is_dirty = true;
+                        self.undo_new_group = true;
+                    }
+                }
+                Command::none()
+            }
+            Message::DedentLine => {
+                if !self.show_search && !self.show_preferences {
+                    let indent = if self.config.use_spaces {
+                        " ".repeat(self.config.tab_width)
+                    } else {
+                        "\t".to_string()
+                    };
+                    if let Some(selected) = self.editor.content.selection() {
+                        self.push_undo();
+                        let new_sel = dedent_text(&selected, &indent);
+                        self.editor.content.perform(text_editor::Action::Edit(
+                            text_editor::Edit::Paste(std::sync::Arc::new(new_sel)),
+                        ));
+                        self.is_dirty = true;
+                        self.undo_new_group = true;
+                    } else {
+                        self.push_undo();
+                        let text = self.editor.content.text();
+                        let (line_idx, _) = self.editor.content.cursor_position();
+                        let new_text = dedent_line(&text, line_idx, &indent);
+                        let lang = self.editor.language.clone();
+                        self.editor.content = text_editor::Content::with_text(&new_text);
+                        self.editor.language = lang;
+                        self.is_dirty = true;
+                        self.undo_new_group = true;
+                        return Command::perform(async move { line_idx }, Message::RestoreCursorLine);
+                    }
+                }
+                Command::none()
+            }
+            Message::OpenRecentFile(path) => {
+                if !path.exists() {
+                    self.config.recent_files.retain(|f| *f != path.to_string_lossy().as_ref());
+                    self.config.save();
+                    self.status_message = format!("{}: {}", t!("status.error"), t!("status.no_file"));
+                    return Command::none();
+                }
+                if let Some(current) = self.current_file.clone() {
+                    self.file_cache.insert(
+                        current,
+                        (self.editor.content.text().to_string(), self.editor.language.clone(), self.is_dirty),
+                    );
+                }
+                self.undo_stack.clear();
+                self.redo_stack.clear();
+                self.undo_new_group = true;
+                self.sidebar.add_file(path.clone());
+                if let Some((content, language, dirty)) = self.file_cache.get(&path).cloned() {
+                    self.editor = EditorState::from_content(&content);
+                    self.editor.language = language;
+                    self.current_file = Some(path);
+                    self.is_dirty = dirty;
+                    self.status_message = t!("status.file_opened").to_string();
+                    Command::none()
+                } else {
+                    Command::perform(read_file(path), Message::FileOpened)
+                }
+            }
+            Message::RestoreCursorLine(target) => {
+                let max = self.editor.content.line_count().saturating_sub(1);
+                let target = target.min(max);
+                self.editor.content.perform(text_editor::Action::Move(text_editor::Motion::DocumentStart));
+                for _ in 0..target {
+                    self.editor.content.perform(text_editor::Action::Move(text_editor::Motion::Down));
+                }
+                self.editor.content.perform(text_editor::Action::Move(text_editor::Motion::Home));
+                Command::none()
             }
             Message::EscapePressed => {
                 if !matches!(self.overlay, ActiveOverlay::None) {
@@ -737,12 +935,17 @@ impl Application for TinctaApp {
                 return Some(Message::EscapePressed);
             }
             if key == Key::Named(Named::Tab) {
+                if modifiers.shift() {
+                    return Some(Message::DedentLine);
+                }
                 return Some(Message::InsertTab);
             }
 
             let key_str = match key.as_ref() {
                 Key::Character(c) => c.to_lowercase(),
                 Key::Named(Named::Enter) => "Return".to_string(),
+                Key::Named(Named::ArrowUp) => "ArrowUp".to_string(),
+                Key::Named(Named::ArrowDown) => "ArrowDown".to_string(),
                 Key::Named(Named::F1) => "F1".to_string(),
                 Key::Named(Named::F2) => "F2".to_string(),
                 Key::Named(Named::F3) => "F3".to_string(),
@@ -856,6 +1059,15 @@ impl Application for TinctaApp {
         }
 
         let cursor = self.editor.content.cursor_position();
+        let selection_info = self.editor.content.selection().map(|s| {
+            let chars = s.chars().count();
+            let lines = s.lines().count();
+            if lines > 1 { format!("{}L {}C", lines, chars) } else { format!("{}C", chars) }
+        });
+        let file_size = self.current_file.as_ref()
+            .filter(|p| !is_untitled(p))
+            .and_then(|p| std::fs::metadata(p).ok())
+            .map(|m| m.len());
         let status_bar = crate::editor::statusbar::view(
             &self.status_message,
             &self.current_file,
@@ -864,6 +1076,8 @@ impl Application for TinctaApp {
             cursor,
             self.status_is_error,
             self.editor.language.as_deref(),
+            selection_info,
+            file_size,
         );
 
         let error_panel: Option<Element<Message>> = if self.show_error_panel {
@@ -1157,6 +1371,11 @@ impl TinctaApp {
         let rows_data: Vec<(ShortcutTarget, String, &crate::config::ShortcutConfig)> = vec![
             (ShortcutTarget::Undo, t!("shortcuts.undo").to_string(), &sc.undo),
             (ShortcutTarget::Redo, t!("shortcuts.redo").to_string(), &sc.redo),
+            (ShortcutTarget::DuplicateLine, t!("shortcuts.duplicate_line").to_string(), &sc.duplicate_line),
+            (ShortcutTarget::MoveLineUp, t!("shortcuts.move_line_up").to_string(), &sc.move_line_up),
+            (ShortcutTarget::MoveLineDown, t!("shortcuts.move_line_down").to_string(), &sc.move_line_down),
+            (ShortcutTarget::ToggleComment, t!("shortcuts.toggle_comment").to_string(), &sc.toggle_comment),
+            (ShortcutTarget::DeleteLine, t!("shortcuts.delete_line").to_string(), &sc.delete_line),
             (ShortcutTarget::NewFile, t!("shortcuts.new_file").to_string(), &sc.new_file),
             (ShortcutTarget::OpenFile, t!("shortcuts.open_file").to_string(), &sc.open_file),
             (ShortcutTarget::SaveFile, t!("shortcuts.save_file").to_string(), &sc.save_file),
@@ -1336,6 +1555,102 @@ impl TinctaApp {
     }
 }
 
+// ─── Text manipulation helpers ──────────────────────────────────────────────
+
+pub fn comment_prefix(language: Option<&str>) -> &'static str {
+    match language {
+        Some("rs") | Some("js") | Some("ts") | Some("jsx") | Some("tsx") |
+        Some("c") | Some("cpp") | Some("java") | Some("go") | Some("swift") | Some("kt") => "// ",
+        Some("py") | Some("rb") | Some("sh") | Some("r") | Some("toml") | Some("yaml") => "# ",
+        Some("sql") | Some("lua") => "-- ",
+        _ => "// ",
+    }
+}
+
+pub fn duplicate_line(text: &str, line_idx: usize) -> String {
+    let mut lines: Vec<String> = text.split('\n').map(|l| l.to_string()).collect();
+    if line_idx < lines.len() {
+        let copy = lines[line_idx].clone();
+        lines.insert(line_idx + 1, copy);
+    }
+    lines.join("\n")
+}
+
+/// Returns (new_text, new_cursor_line).
+pub fn move_line(text: &str, line_idx: usize, up: bool) -> (String, usize) {
+    let mut lines: Vec<String> = text.split('\n').map(|l| l.to_string()).collect();
+    if up {
+        if line_idx == 0 { return (text.to_string(), line_idx); }
+        lines.swap(line_idx, line_idx - 1);
+        (lines.join("\n"), line_idx - 1)
+    } else {
+        if line_idx + 1 >= lines.len() { return (text.to_string(), line_idx); }
+        lines.swap(line_idx, line_idx + 1);
+        (lines.join("\n"), line_idx + 1)
+    }
+}
+
+/// Returns (new_text, new_cursor_line).
+pub fn delete_line_op(text: &str, line_idx: usize) -> (String, usize) {
+    let mut lines: Vec<String> = text.split('\n').map(|l| l.to_string()).collect();
+    if line_idx >= lines.len() { return (text.to_string(), line_idx); }
+    lines.remove(line_idx);
+    let new_line = if lines.is_empty() { 0 } else { line_idx.min(lines.len() - 1) };
+    (lines.join("\n"), new_line)
+}
+
+pub fn toggle_comment(text: &str, line_idx: usize, prefix: &str) -> String {
+    let mut lines: Vec<String> = text.split('\n').map(|l| l.to_string()).collect();
+    if line_idx >= lines.len() { return text.to_string(); }
+    let line = lines[line_idx].clone();
+    let leading_ws: String = line.chars().take_while(|c| c.is_whitespace()).collect();
+    let content = line.trim_start();
+    if content.starts_with(prefix) {
+        lines[line_idx] = format!("{}{}", leading_ws, &content[prefix.len()..]);
+    } else {
+        lines[line_idx] = format!("{}{}{}", leading_ws, prefix, content);
+    }
+    lines.join("\n")
+}
+
+pub fn indent_text(text: &str, indent: &str) -> String {
+    text.split('\n')
+        .map(|line| if line.is_empty() { line.to_string() } else { format!("{}{}", indent, line) })
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+pub fn dedent_text(text: &str, indent: &str) -> String {
+    text.split('\n')
+        .map(|line| {
+            if let Some(stripped) = line.strip_prefix(indent) {
+                stripped.to_string()
+            } else if line.starts_with('\t') {
+                line[1..].to_string()
+            } else {
+                let n = line.chars().take(indent.len()).take_while(|c| *c == ' ').count();
+                line[n..].to_string()
+            }
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+pub fn dedent_line(text: &str, line_idx: usize, indent: &str) -> String {
+    let mut lines: Vec<String> = text.split('\n').map(|l| l.to_string()).collect();
+    if line_idx >= lines.len() { return text.to_string(); }
+    let line = lines[line_idx].clone();
+    lines[line_idx] = if let Some(stripped) = line.strip_prefix(indent) {
+        stripped.to_string()
+    } else if line.starts_with('\t') {
+        line[1..].to_string()
+    } else {
+        let n = line.chars().take(indent.len()).take_while(|c| *c == ' ').count();
+        line[n..].to_string()
+    };
+    lines.join("\n")
+}
+
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 pub fn untitled_path(n: u32) -> PathBuf {
@@ -1410,4 +1725,113 @@ async fn save_file_as(content: String) -> Result<PathBuf, String> {
     let path = handle.path().to_path_buf();
     std::fs::write(&path, &content).map_err(|e| e.to_string())?;
     Ok(path)
+}
+
+#[cfg(test)]
+mod text_ops_tests {
+    use super::*;
+
+    #[test]
+    fn duplicate_line_middle() {
+        let text = "line1\nline2\nline3";
+        let result = duplicate_line(text, 1);
+        assert_eq!(result, "line1\nline2\nline2\nline3");
+    }
+
+    #[test]
+    fn duplicate_line_first() {
+        let text = "abc\ndef";
+        let result = duplicate_line(text, 0);
+        assert_eq!(result, "abc\nabc\ndef");
+    }
+
+    #[test]
+    fn move_line_up_basic() {
+        let text = "aaa\nbbb\nccc";
+        let (result, new_line) = move_line(text, 1, true);
+        assert_eq!(result, "bbb\naaa\nccc");
+        assert_eq!(new_line, 0);
+    }
+
+    #[test]
+    fn move_line_up_noop_at_top() {
+        let text = "aaa\nbbb";
+        let (result, new_line) = move_line(text, 0, true);
+        assert_eq!(result, "aaa\nbbb");
+        assert_eq!(new_line, 0);
+    }
+
+    #[test]
+    fn move_line_down_basic() {
+        let text = "aaa\nbbb\nccc";
+        let (result, new_line) = move_line(text, 0, false);
+        assert_eq!(result, "bbb\naaa\nccc");
+        assert_eq!(new_line, 1);
+    }
+
+    #[test]
+    fn delete_line_middle() {
+        let text = "aaa\nbbb\nccc";
+        let (result, new_line) = delete_line_op(text, 1);
+        assert_eq!(result, "aaa\nccc");
+        assert_eq!(new_line, 1);
+    }
+
+    #[test]
+    fn delete_line_last() {
+        let text = "aaa\nbbb";
+        let (result, new_line) = delete_line_op(text, 1);
+        assert_eq!(result, "aaa");
+        assert_eq!(new_line, 0);
+    }
+
+    #[test]
+    fn toggle_comment_add() {
+        let text = "fn main() {}";
+        let result = toggle_comment(text, 0, "// ");
+        assert_eq!(result, "// fn main() {}");
+    }
+
+    #[test]
+    fn toggle_comment_remove() {
+        let text = "// fn main() {}";
+        let result = toggle_comment(text, 0, "// ");
+        assert_eq!(result, "fn main() {}");
+    }
+
+    #[test]
+    fn toggle_comment_preserves_indent() {
+        let text = "    let x = 1;";
+        let result = toggle_comment(text, 0, "// ");
+        assert_eq!(result, "    // let x = 1;");
+    }
+
+    #[test]
+    fn indent_text_basic() {
+        let text = "line1\nline2";
+        let result = indent_text(text, "    ");
+        assert_eq!(result, "    line1\n    line2");
+    }
+
+    #[test]
+    fn dedent_text_basic() {
+        let text = "    line1\n    line2";
+        let result = dedent_text(text, "    ");
+        assert_eq!(result, "line1\nline2");
+    }
+
+    #[test]
+    fn dedent_text_partial() {
+        let text = "  line1\nline2";
+        let result = dedent_text(text, "    ");
+        assert_eq!(result, "line1\nline2");
+    }
+
+    #[test]
+    fn comment_prefix_by_language() {
+        assert_eq!(comment_prefix(Some("rs")), "// ");
+        assert_eq!(comment_prefix(Some("py")), "# ");
+        assert_eq!(comment_prefix(Some("sql")), "-- ");
+        assert_eq!(comment_prefix(None), "// ");
+    }
 }

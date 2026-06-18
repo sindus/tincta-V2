@@ -94,5 +94,17 @@
   "shortcuts.toggle_sidebar": "Toggle sidebar",
   "shortcuts.quit": "Quit",
   "shortcuts.undo": "Undo",
-  "shortcuts.redo": "Redo"
+  "shortcuts.redo": "Redo",
+  "shortcuts.duplicate_line": "Duplicate line",
+  "shortcuts.move_line_up": "Move line up",
+  "shortcuts.move_line_down": "Move line down",
+  "shortcuts.toggle_comment": "Toggle comment",
+  "shortcuts.delete_line": "Delete line",
+  "menu.edit_duplicate_line": "Duplicate Line",
+  "menu.edit_move_line_up": "Move Line Up",
+  "menu.edit_move_line_down": "Move Line Down",
+  "menu.edit_toggle_comment": "Toggle Comment",
+  "menu.edit_delete_line": "Delete Line",
+  "menu.file_recents": "Recent Files",
+  "menu.file_no_recents": "No recent files"
 }

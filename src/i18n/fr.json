@@ -94,5 +94,17 @@
   "shortcuts.toggle_sidebar": "Panneau latéral",
   "shortcuts.quit": "Quitter",
   "shortcuts.undo": "Annuler",
-  "shortcuts.redo": "Rétablir"
+  "shortcuts.redo": "Rétablir",
+  "shortcuts.duplicate_line": "Dupliquer la ligne",
+  "shortcuts.move_line_up": "Monter la ligne",
+  "shortcuts.move_line_down": "Descendre la ligne",
+  "shortcuts.toggle_comment": "Commenter/décommenter",
+  "shortcuts.delete_line": "Supprimer la ligne",
+  "menu.edit_duplicate_line": "Dupliquer la ligne",
+  "menu.edit_move_line_up": "Monter la ligne",
+  "menu.edit_move_line_down": "Descendre la ligne",
+  "menu.edit_toggle_comment": "Commenter/décommenter",
+  "menu.edit_delete_line": "Supprimer la ligne",
+  "menu.file_recents": "Fichiers récents",
+  "menu.file_no_recents": "Aucun fichier récent"
 }

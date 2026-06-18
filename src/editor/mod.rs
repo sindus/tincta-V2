@@ -167,6 +167,8 @@ pub mod statusbar {
         cursor: (usize, usize),
         is_error: bool,
         language: Option<&'a str>,
+        selection_info: Option<String>,
+        file_size: Option<u64>,
     ) -> Element<'a, Message> {
         let file_info = current_file
             .as_ref()
@@ -196,11 +198,25 @@ pub mod statusbar {
             })
             .unwrap_or("");
 
+        let sel_text = selection_info
+            .map(|s| format!("{}  ", s))
+            .unwrap_or_default();
+
+        let size_text = file_size
+            .map(|b| {
+                if b < 1024 { format!("  {}B", b) }
+                else if b < 1024 * 1024 { format!("  {}KB", b / 1024) }
+                else { format!("  {}MB", b / (1024 * 1024)) }
+            })
+            .unwrap_or_default();
+
         let bar = row![
             text(status).size(11).style(status_color),
             Space::with_width(Length::Fill),
+            text(sel_text).size(11).style(muted),
             text(lang_label).size(11).style(muted),
             text(format!("  {}", cursor_text)).size(11).style(muted),
+            text(size_text).size(11).style(muted),
             text(format!("  {}{}", file_info, dirty_indicator))
                 .size(11)
                 .style(if is_dirty { theme::accent_color() } else { muted }),

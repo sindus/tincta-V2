@@ -17,6 +17,11 @@ pub enum ShortcutTarget {
     Quit,
     Undo,
     Redo,
+    DuplicateLine,
+    MoveLineUp,
+    MoveLineDown,
+    ToggleComment,
+    DeleteLine,
 }
 
 /// A single keyboard binding stored as display-friendly strings.
@@ -25,7 +30,7 @@ pub struct ShortcutConfig {
     pub ctrl: bool,
     pub shift: bool,
     pub alt: bool,
-    /// Single character ("n", "s") or named key ("Return", "F1").
+    /// Single character ("n", "s") or named key ("Return", "F1", "ArrowUp").
     pub key: String,
 }
 
@@ -35,6 +40,9 @@ impl ShortcutConfig {
     }
     fn ctrl_shift(key: &str) -> Self {
         Self { ctrl: true, shift: true, alt: false, key: key.to_string() }
+    }
+    fn alt(key: &str) -> Self {
+        Self { ctrl: false, shift: false, alt: true, key: key.to_string() }
     }
 
     pub fn display(&self) -> String {
@@ -66,7 +74,23 @@ pub struct Shortcuts {
     pub quit: ShortcutConfig,
     pub undo: ShortcutConfig,
     pub redo: ShortcutConfig,
+    #[serde(default = "default_duplicate_line")]
+    pub duplicate_line: ShortcutConfig,
+    #[serde(default = "default_move_line_up")]
+    pub move_line_up: ShortcutConfig,
+    #[serde(default = "default_move_line_down")]
+    pub move_line_down: ShortcutConfig,
+    #[serde(default = "default_toggle_comment")]
+    pub toggle_comment: ShortcutConfig,
+    #[serde(default = "default_delete_line")]
+    pub delete_line: ShortcutConfig,
 }
+
+fn default_duplicate_line() -> ShortcutConfig { ShortcutConfig::ctrl_shift("d") }
+fn default_move_line_up() -> ShortcutConfig { ShortcutConfig::alt("ArrowUp") }
+fn default_move_line_down() -> ShortcutConfig { ShortcutConfig::alt("ArrowDown") }
+fn default_toggle_comment() -> ShortcutConfig { ShortcutConfig::ctrl("/") }
+fn default_delete_line() -> ShortcutConfig { ShortcutConfig::ctrl_shift("k") }
 
 impl Default for Shortcuts {
     fn default() -> Self {
@@ -84,6 +108,11 @@ impl Default for Shortcuts {
             quit: ShortcutConfig::ctrl("q"),
             undo: ShortcutConfig::ctrl("z"),
             redo: ShortcutConfig::ctrl("y"),
+            duplicate_line: default_duplicate_line(),
+            move_line_up: default_move_line_up(),
+            move_line_down: default_move_line_down(),
+            toggle_comment: default_toggle_comment(),
+            delete_line: default_delete_line(),
         }
     }
 }
@@ -106,6 +135,8 @@ pub struct Config {
     pub locale: String,
     #[serde(default)]
     pub shortcuts: Shortcuts,
+    #[serde(default)]
+    pub recent_files: Vec<String>,
 }
 
 impl Default for Config {
@@ -126,6 +157,7 @@ impl Default for Config {
             highlight_current_line: true,
             locale: "en".to_string(),
             shortcuts: Shortcuts::default(),
+            recent_files: Vec::new(),
         }
     }
 }
@@ -151,6 +183,17 @@ impl Config {
                 let _ = std::fs::write(path, json);
             }
         }
+    }
+
+    /// Add a file to the recent files list (max 10, no duplicates, no untitled).
+    pub fn add_recent(&mut self, path: &PathBuf) {
+        if path.to_str().map(|s| s.starts_with("untitled://")).unwrap_or(false) {
+            return;
+        }
+        let s = path.to_string_lossy().to_string();
+        self.recent_files.retain(|f| f != &s);
+        self.recent_files.insert(0, s);
+        self.recent_files.truncate(10);
     }
 }
 
@@ -183,5 +226,33 @@ mod tests {
         assert_eq!(sc.display(), "Ctrl+N");
         let sc2 = ShortcutConfig::ctrl_shift("s");
         assert_eq!(sc2.display(), "Ctrl+Shift+S");
+        let sc3 = ShortcutConfig::alt("ArrowUp");
+        assert_eq!(sc3.display(), "Alt+ArrowUp");
+    }
+
+    #[test]
+    fn add_recent_deduplication() {
+        let mut config = Config::default();
+        config.add_recent(&PathBuf::from("/home/user/file.rs"));
+        config.add_recent(&PathBuf::from("/home/user/other.rs"));
+        config.add_recent(&PathBuf::from("/home/user/file.rs"));
+        assert_eq!(config.recent_files.len(), 2);
+        assert_eq!(config.recent_files[0], "/home/user/file.rs");
+    }
+
+    #[test]
+    fn add_recent_max_10() {
+        let mut config = Config::default();
+        for i in 0..15 {
+            config.add_recent(&PathBuf::from(format!("/file{}.txt", i)));
+        }
+        assert_eq!(config.recent_files.len(), 10);
+    }
+
+    #[test]
+    fn add_recent_ignores_untitled() {
+        let mut config = Config::default();
+        config.add_recent(&PathBuf::from("untitled://1"));
+        assert!(config.recent_files.is_empty());
     }
 }

@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use iced::{
     widget::{button, column, container, row, text, Space},
     Alignment, Element, Length,
@@ -100,6 +102,14 @@ fn disabled_item(label: String, dark: bool) -> Element<'static, Message> {
         .into()
 }
 
+fn separator(dark: bool) -> Element<'static, Message> {
+    container(Space::with_height(1))
+        .padding([2, 8])
+        .width(Length::Fill)
+        .style(theme::gutter(dark))
+        .into()
+}
+
 fn sc(sc: &ShortcutConfig) -> Option<String> {
     Some(sc.display())
 }
@@ -113,14 +123,33 @@ fn menu_items(
     let dark = config.dark_mode;
     let sh = &config.shortcuts;
     match menu {
-        TopMenu::File => vec![
-            item(t!("menu.file_new").to_string(), sc(&sh.new_file), dark, Message::NewFile),
-            item(t!("menu.file_open").to_string(), sc(&sh.open_file), dark, Message::OpenFile),
-            item(t!("menu.file_save").to_string(), sc(&sh.save_file), dark, Message::SaveFile),
-            item(t!("menu.file_save_as").to_string(), sc(&sh.save_as), dark, Message::SaveFileAs),
-            item(t!("menu.file_close").to_string(), sc(&sh.close_file), dark, Message::CloseFile),
-            item(t!("menu.file_quit").to_string(), sc(&sh.quit), dark, Message::Quit),
-        ],
+        TopMenu::File => {
+            let mut items = vec![
+                item(t!("menu.file_new").to_string(), sc(&sh.new_file), dark, Message::NewFile),
+                item(t!("menu.file_open").to_string(), sc(&sh.open_file), dark, Message::OpenFile),
+            ];
+
+            if !config.recent_files.is_empty() {
+                items.push(separator(dark));
+                items.push(disabled_item(t!("menu.file_recents").to_string(), dark));
+                for path_str in &config.recent_files {
+                    let path = PathBuf::from(path_str);
+                    let name = path
+                        .file_name()
+                        .and_then(|n| n.to_str())
+                        .unwrap_or(path_str)
+                        .to_string();
+                    items.push(item(name, None, dark, Message::OpenRecentFile(path)));
+                }
+                items.push(separator(dark));
+            }
+
+            items.push(item(t!("menu.file_save").to_string(), sc(&sh.save_file), dark, Message::SaveFile));
+            items.push(item(t!("menu.file_save_as").to_string(), sc(&sh.save_as), dark, Message::SaveFileAs));
+            items.push(item(t!("menu.file_close").to_string(), sc(&sh.close_file), dark, Message::CloseFile));
+            items.push(item(t!("menu.file_quit").to_string(), sc(&sh.quit), dark, Message::Quit));
+            items
+        }
         TopMenu::Edit => {
             let format_item: Element<'static, Message> = if has_formatter {
                 item(t!("menu.edit_format").to_string(), sc(&sh.format_code), dark, Message::FormatFile)
@@ -130,6 +159,13 @@ fn menu_items(
             vec![
                 item(t!("menu.edit_undo").to_string(), sc(&sh.undo), dark, Message::Undo),
                 item(t!("menu.edit_redo").to_string(), sc(&sh.redo), dark, Message::Redo),
+                separator(dark),
+                item(t!("menu.edit_duplicate_line").to_string(), sc(&sh.duplicate_line), dark, Message::DuplicateLine),
+                item(t!("menu.edit_move_line_up").to_string(), sc(&sh.move_line_up), dark, Message::MoveLineUp),
+                item(t!("menu.edit_move_line_down").to_string(), sc(&sh.move_line_down), dark, Message::MoveLineDown),
+                item(t!("menu.edit_toggle_comment").to_string(), sc(&sh.toggle_comment), dark, Message::ToggleComment),
+                item(t!("menu.edit_delete_line").to_string(), sc(&sh.delete_line), dark, Message::DeleteLine),
+                separator(dark),
                 item(t!("menu.edit_select_all").to_string(), sc(&sh.select_all), dark, Message::SelectAll),
                 item(t!("menu.edit_find").to_string(), sc(&sh.find), dark, Message::ToggleSearch),
                 item(t!("menu.edit_goto_line").to_string(), sc(&sh.goto_line), dark, Message::OpenGotoLine),
