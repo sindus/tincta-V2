@@ -105,10 +105,13 @@ pub struct TinctaApp {
     file_cache: HashMap<PathBuf, (String, Option<String>, bool)>,
     overlay: ActiveOverlay,
     goto_line_input: String,
-    /// Per-keystroke undo history (capped at 100 snapshots).
+    /// Word-level undo history (capped at 100 snapshots).
     undo_stack: Vec<String>,
     /// Redo history rebuilt when undoing.
     redo_stack: Vec<String>,
+    /// Whether the next edit should open a new undo group.
+    /// True at start, after whitespace, after a cursor move, after delete.
+    undo_new_group: bool,
 }
 
 impl Application for TinctaApp {
@@ -143,6 +146,7 @@ impl Application for TinctaApp {
             goto_line_input: String::new(),
             undo_stack: Vec::new(),
             redo_stack: Vec::new(),
+            undo_new_group: true,
             config,
         };
 
@@ -172,7 +176,30 @@ impl Application for TinctaApp {
                 let is_edit = action.is_edit();
 
                 if is_edit {
-                    self.push_undo();
+                    match &action {
+                        text_editor::Action::Edit(edit) => match edit {
+                            text_editor::Edit::Insert(ch) => {
+                                if ch.is_whitespace() {
+                                    // Whitespace ends the current word group; next non-ws starts a new one
+                                    self.undo_new_group = true;
+                                } else if self.undo_new_group {
+                                    // First non-whitespace of a new group: snapshot now
+                                    self.push_undo();
+                                    self.undo_new_group = false;
+                                }
+                                // else: mid-word, stay in current group
+                            }
+                            _ => {
+                                // Backspace, Delete, Enter, Paste: always their own undo point
+                                self.push_undo();
+                                self.undo_new_group = true;
+                            }
+                        },
+                        _ => {}
+                    }
+                } else {
+                    // Motion action: next edit opens a new group
+                    self.undo_new_group = true;
                 }
 
                 // Auto-indent: replicate leading whitespace of current line on Enter
@@ -283,6 +310,7 @@ impl Application for TinctaApp {
                 self.is_dirty = false;
                 self.undo_stack.clear();
                 self.redo_stack.clear();
+                self.undo_new_group = true;
                 self.status_message = t!("status.new_file").to_string();
                 Command::none()
             }
@@ -354,6 +382,7 @@ impl Application for TinctaApp {
                 self.is_dirty = false;
                 self.undo_stack.clear();
                 self.redo_stack.clear();
+                self.undo_new_group = true;
                 self.status_message = t!("status.ready").to_string();
                 self.save_session();
                 Command::none()
@@ -553,7 +582,11 @@ impl Application for TinctaApp {
                     let lang = self.editor.language.clone();
                     self.editor.content = text_editor::Content::with_text(&prev);
                     self.editor.language = lang;
+                    self.editor.content.perform(text_editor::Action::Move(
+                        text_editor::Motion::DocumentEnd,
+                    ));
                     self.is_dirty = true;
+                    self.undo_new_group = true;
                 }
                 Command::none()
             }
@@ -567,7 +600,11 @@ impl Application for TinctaApp {
                     let lang = self.editor.language.clone();
                     self.editor.content = text_editor::Content::with_text(&next);
                     self.editor.language = lang;
+                    self.editor.content.perform(text_editor::Action::Move(
+                        text_editor::Motion::DocumentEnd,
+                    ));
                     self.is_dirty = true;
+                    self.undo_new_group = true;
                 }
                 Command::none()
             }
