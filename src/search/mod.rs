@@ -90,8 +90,7 @@ impl SearchState {
         }
         if self.use_regex {
             let flags = if self.case_sensitive { "" } else { "(?i)" };
-            let re = Regex::new(&format!("{}{}", flags, &self.query))
-                .map_err(|e| e.to_string())?;
+            let re = Regex::new(&format!("{}{}", flags, &self.query)).map_err(|e| e.to_string())?;
             Ok(re.replace_all(text, self.replacement.as_str()).into_owned())
         } else if self.case_sensitive {
             Ok(text.replace(&self.query, &self.replacement))
@@ -155,7 +154,10 @@ impl SearchState {
         .spacing(8)
         .padding([6, 10]);
 
-        container(bar).width(Length::Fill).style(theme::bar(dark)).into()
+        container(bar)
+            .width(Length::Fill)
+            .style(theme::bar(dark))
+            .into()
     }
 }
 
@@ -163,7 +165,12 @@ impl SearchState {
 mod tests {
     use super::*;
 
-    fn make_search(query: &str, replacement: &str, use_regex: bool, case_sensitive: bool) -> SearchState {
+    fn make_search(
+        query: &str,
+        replacement: &str,
+        use_regex: bool,
+        case_sensitive: bool,
+    ) -> SearchState {
         SearchState {
             query: query.to_string(),
             replacement: replacement.to_string(),

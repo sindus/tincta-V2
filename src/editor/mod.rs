@@ -29,11 +29,11 @@ pub const SUPPORTED_LANGUAGES: &[(&str, &str)] = &[
     ("r", "R"),
 ];
 
+use iced::highlighter as hl;
 use iced::{
     widget::{container, row, text, text_editor},
     Element, Font, Length,
 };
-use iced::highlighter as hl;
 
 use crate::{app::Message, config::Config};
 
@@ -72,11 +72,16 @@ impl EditorState {
         let editor = text_editor(&self.content)
             .on_action(Message::EditorAction)
             .highlight::<hl::Highlighter>(
-                hl::Settings { theme: hl_theme, extension },
+                hl::Settings {
+                    theme: hl_theme,
+                    extension,
+                },
                 |highlight, _theme| highlight.to_format(),
             )
             .style(iced::theme::TextEditor::Custom(Box::new(
-                crate::theme::EditorStyle { dark: config.dark_mode },
+                crate::theme::EditorStyle {
+                    dark: config.dark_mode,
+                },
             )))
             .height(Length::Fill);
 
@@ -100,7 +105,12 @@ impl EditorState {
                     .font(Font::MONOSPACE)
                     .style(crate::theme::muted_text(config.dark_mode)),
             )
-            .padding(iced::Padding { top: 13.0, right: 6.0, bottom: 8.0, left: 8.0 })
+            .padding(iced::Padding {
+                top: 13.0,
+                right: 6.0,
+                bottom: 8.0,
+                left: 8.0,
+            })
             .height(Length::Fill)
             .style(crate::theme::gutter(config.dark_mode));
 
@@ -204,9 +214,13 @@ pub mod statusbar {
 
         let size_text = file_size
             .map(|b| {
-                if b < 1024 { format!("  {}B", b) }
-                else if b < 1024 * 1024 { format!("  {}KB", b / 1024) }
-                else { format!("  {}MB", b / (1024 * 1024)) }
+                if b < 1024 {
+                    format!("  {}B", b)
+                } else if b < 1024 * 1024 {
+                    format!("  {}KB", b / 1024)
+                } else {
+                    format!("  {}MB", b / (1024 * 1024))
+                }
             })
             .unwrap_or_default();
 
@@ -219,11 +233,18 @@ pub mod statusbar {
             text(size_text).size(11).style(muted),
             text(format!("  {}{}", file_info, dirty_indicator))
                 .size(11)
-                .style(if is_dirty { theme::accent_color() } else { muted }),
+                .style(if is_dirty {
+                    theme::accent_color()
+                } else {
+                    muted
+                }),
         ]
         .padding([5, 10]);
 
-        container(bar).width(Length::Fill).style(theme::bar(dark)).into()
+        container(bar)
+            .width(Length::Fill)
+            .style(theme::bar(dark))
+            .into()
     }
 }
 
@@ -243,9 +264,15 @@ mod tests {
 
     #[test]
     fn extension_to_token_all_common() {
-        let exts = ["py", "js", "ts", "html", "css", "json", "md", "sh", "c", "cpp"];
+        let exts = [
+            "py", "js", "ts", "html", "css", "json", "md", "sh", "c", "cpp",
+        ];
         for ext in exts {
-            assert!(extension_to_token(ext).is_some(), "Missing token for .{}", ext);
+            assert!(
+                extension_to_token(ext).is_some(),
+                "Missing token for .{}",
+                ext
+            );
         }
     }
 

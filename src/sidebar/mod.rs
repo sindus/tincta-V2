@@ -92,7 +92,10 @@ impl SidebarState {
             .enumerate()
             .map(|(i, path)| {
                 let name = if crate::app::is_untitled(path) {
-                    let n = path.to_str().unwrap_or("").trim_start_matches("untitled://");
+                    let n = path
+                        .to_str()
+                        .unwrap_or("")
+                        .trim_start_matches("untitled://");
                     format!("{} {}", t!("sidebar.untitled"), n)
                 } else {
                     path.file_name()
@@ -152,8 +155,7 @@ impl SidebarState {
                             ),
                             ctx_item(
                                 lbl_save_as.clone(),
-                                is_active
-                                    .then(|| Message::Sidebar(SidebarMessage::RequestSaveAs)),
+                                is_active.then(|| Message::Sidebar(SidebarMessage::RequestSaveAs)),
                             ),
                         ]
                         .spacing(2)
@@ -167,7 +169,9 @@ impl SidebarState {
             .collect();
 
         let file_list = if items.is_empty() {
-            column![text(t!("sidebar.no_files")).size(12).style(theme::muted_text(dark))]
+            column![text(t!("sidebar.no_files"))
+                .size(12)
+                .style(theme::muted_text(dark))]
         } else {
             column(items).spacing(2)
         };
@@ -179,7 +183,9 @@ impl SidebarState {
         container(
             scrollable(
                 column![
-                    text(t!("sidebar.files")).size(11).style(theme::muted_text(dark)),
+                    text(t!("sidebar.files"))
+                        .size(11)
+                        .style(theme::muted_text(dark)),
                     file_list,
                 ]
                 .spacing(10)

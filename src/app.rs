@@ -69,7 +69,12 @@ pub enum Message {
     Redo,
     AutoSave,
     // Raw key press forwarded from the subscription (non-capturing fn pointer)
-    KeyPressed { key: String, ctrl: bool, shift: bool, alt: bool },
+    KeyPressed {
+        key: String,
+        ctrl: bool,
+        shift: bool,
+        alt: bool,
+    },
     EscapePressed,
     // Overlays
     CloseOverlay,
@@ -233,7 +238,9 @@ impl Application for TinctaApp {
                             .chars()
                             .take_while(|c| *c == ' ' || *c == '\t')
                             .collect();
-                        self.editor.content.perform(text_editor::Action::Edit(text_editor::Edit::Enter));
+                        self.editor
+                            .content
+                            .perform(text_editor::Action::Edit(text_editor::Edit::Enter));
                         if !indent.is_empty() {
                             self.editor.content.perform(text_editor::Action::Edit(
                                 text_editor::Edit::Paste(std::sync::Arc::new(indent)),
@@ -272,9 +279,9 @@ impl Application for TinctaApp {
                         if matches!(ch, '"' | '\'' | '`') {
                             let c = *ch;
                             self.editor.content.perform(action.clone());
-                            self.editor.content.perform(text_editor::Action::Edit(
-                                text_editor::Edit::Insert(c),
-                            ));
+                            self.editor
+                                .content
+                                .perform(text_editor::Action::Edit(text_editor::Edit::Insert(c)));
                             self.is_dirty = true;
                             return Command::perform(async {}, |_| Message::MoveCursorLeft);
                         }
@@ -307,23 +314,31 @@ impl Application for TinctaApp {
                 Command::none()
             }
             Message::SelectAll => {
-                self.editor
-                    .content
-                    .perform(text_editor::Action::Move(text_editor::Motion::DocumentStart));
-                self.editor
-                    .content
-                    .perform(text_editor::Action::Select(text_editor::Motion::DocumentEnd));
+                self.editor.content.perform(text_editor::Action::Move(
+                    text_editor::Motion::DocumentStart,
+                ));
+                self.editor.content.perform(text_editor::Action::Select(
+                    text_editor::Motion::DocumentEnd,
+                ));
                 Command::none()
             }
             Message::ToggleMenu(menu) => {
-                self.open_menu = if self.open_menu == Some(menu) { None } else { Some(menu) };
+                self.open_menu = if self.open_menu == Some(menu) {
+                    None
+                } else {
+                    Some(menu)
+                };
                 Command::none()
             }
             Message::NewFile => {
                 if let Some(current) = self.current_file.clone() {
                     self.file_cache.insert(
                         current,
-                        (self.editor.content.text().to_string(), self.editor.language.clone(), self.is_dirty),
+                        (
+                            self.editor.content.text().to_string(),
+                            self.editor.language.clone(),
+                            self.is_dirty,
+                        ),
                     );
                 }
                 self.untitled_counter += 1;
@@ -519,9 +534,11 @@ impl Application for TinctaApp {
             }
             Message::ContextPaste => iced::clipboard::read(Message::ClipboardContent),
             Message::ClipboardContent(Some(text)) => {
-                self.editor.content.perform(text_editor::Action::Edit(
-                    text_editor::Edit::Paste(std::sync::Arc::new(text)),
-                ));
+                self.editor
+                    .content
+                    .perform(text_editor::Action::Edit(text_editor::Edit::Paste(
+                        std::sync::Arc::new(text),
+                    )));
                 self.is_dirty = true;
                 Command::none()
             }
@@ -538,7 +555,10 @@ impl Application for TinctaApp {
                     self.is_formatting = true;
                     self.status_message = t!("status.formatting").to_string();
                     let content = self.editor.content.text().to_string();
-                    Command::perform(crate::formatter::format(content, ext), Message::FileFormatted)
+                    Command::perform(
+                        crate::formatter::format(content, ext),
+                        Message::FileFormatted,
+                    )
                 } else {
                     self.status_message = t!("status.no_language").to_string();
                     Command::none()
@@ -613,9 +633,9 @@ impl Application for TinctaApp {
                     let lang = self.editor.language.clone();
                     self.editor.content = text_editor::Content::with_text(&prev);
                     self.editor.language = lang;
-                    self.editor.content.perform(text_editor::Action::Move(
-                        text_editor::Motion::DocumentEnd,
-                    ));
+                    self.editor
+                        .content
+                        .perform(text_editor::Action::Move(text_editor::Motion::DocumentEnd));
                     self.is_dirty = true;
                     self.undo_new_group = true;
                 }
@@ -631,9 +651,9 @@ impl Application for TinctaApp {
                     let lang = self.editor.language.clone();
                     self.editor.content = text_editor::Content::with_text(&next);
                     self.editor.language = lang;
-                    self.editor.content.perform(text_editor::Action::Move(
-                        text_editor::Motion::DocumentEnd,
-                    ));
+                    self.editor
+                        .content
+                        .perform(text_editor::Action::Move(text_editor::Motion::DocumentEnd));
                     self.is_dirty = true;
                     self.undo_new_group = true;
                 }
@@ -644,9 +664,9 @@ impl Application for TinctaApp {
                 Command::none()
             }
             Message::MoveCursorLeft => {
-                self.editor.content.perform(text_editor::Action::Move(
-                    text_editor::Motion::Left,
-                ));
+                self.editor
+                    .content
+                    .perform(text_editor::Action::Move(text_editor::Motion::Left));
                 Command::none()
             }
             // --- Overlays ---
@@ -669,9 +689,9 @@ impl Application for TinctaApp {
                     let target = n.saturating_sub(1); // 0-indexed
                     let max = self.editor.content.line_count().saturating_sub(1);
                     let target = target.min(max);
-                    self.editor
-                        .content
-                        .perform(text_editor::Action::Move(text_editor::Motion::DocumentStart));
+                    self.editor.content.perform(text_editor::Action::Move(
+                        text_editor::Motion::DocumentStart,
+                    ));
                     for _ in 0..target {
                         self.editor
                             .content
@@ -698,15 +718,30 @@ impl Application for TinctaApp {
                 Command::none()
             }
             Message::StartCaptureShortcut(target) => {
-                self.overlay = ActiveOverlay::Shortcuts { capturing: Some(target) };
+                self.overlay = ActiveOverlay::Shortcuts {
+                    capturing: Some(target),
+                };
                 Command::none()
             }
             // Raw key forwarded from the subscription fn pointer
-            Message::KeyPressed { key, ctrl, shift, alt } => {
+            Message::KeyPressed {
+                key,
+                ctrl,
+                shift,
+                alt,
+            } => {
                 // In shortcut capture mode: save the new binding
-                if let ActiveOverlay::Shortcuts { capturing: Some(target) } = &self.overlay {
+                if let ActiveOverlay::Shortcuts {
+                    capturing: Some(target),
+                } = &self.overlay
+                {
                     let target = *target;
-                    let sc = ShortcutConfig { ctrl, shift, alt, key };
+                    let sc = ShortcutConfig {
+                        ctrl,
+                        shift,
+                        alt,
+                        key,
+                    };
                     match target {
                         ShortcutTarget::NewFile => self.config.shortcuts.new_file = sc,
                         ShortcutTarget::OpenFile => self.config.shortcuts.open_file = sc,
@@ -737,29 +772,56 @@ impl Application for TinctaApp {
                 }
                 // Match against config shortcuts
                 let sc_check = |s: &ShortcutConfig| -> bool {
-                    s.key.eq_ignore_ascii_case(&key) && s.ctrl == ctrl && s.shift == shift && s.alt == alt
+                    s.key.eq_ignore_ascii_case(&key)
+                        && s.ctrl == ctrl
+                        && s.shift == shift
+                        && s.alt == alt
                 };
                 let sh = &self.config.shortcuts;
-                let msg = if sc_check(&sh.undo) { Some(Message::Undo) }
-                    else if sc_check(&sh.redo) { Some(Message::Redo) }
-                    else if sc_check(&sh.duplicate_line) { Some(Message::DuplicateLine) }
-                    else if sc_check(&sh.move_line_up) { Some(Message::MoveLineUp) }
-                    else if sc_check(&sh.move_line_down) { Some(Message::MoveLineDown) }
-                    else if sc_check(&sh.toggle_comment) { Some(Message::ToggleComment) }
-                    else if sc_check(&sh.delete_line) { Some(Message::DeleteLine) }
-                    else if sc_check(&sh.save_as) { Some(Message::SaveFileAs) }
-                    else if sc_check(&sh.new_file) { Some(Message::NewFile) }
-                    else if sc_check(&sh.save_file) { Some(Message::SaveFile) }
-                    else if sc_check(&sh.open_file) { Some(Message::OpenFile) }
-                    else if sc_check(&sh.close_file) { Some(Message::CloseFile) }
-                    else if sc_check(&sh.find) { Some(Message::ToggleSearch) }
-                    else if sc_check(&sh.select_all) { Some(Message::SelectAll) }
-                    else if sc_check(&sh.format_code) { Some(Message::FormatFile) }
-                    else if sc_check(&sh.goto_line) { Some(Message::OpenGotoLine) }
-                    else if sc_check(&sh.toggle_sidebar) { Some(Message::ToggleSidebar) }
-                    else if sc_check(&sh.quit) { Some(Message::Quit) }
-                    else { None };
-                if let Some(m) = msg { self.update(m) } else { Command::none() }
+                let msg = if sc_check(&sh.undo) {
+                    Some(Message::Undo)
+                } else if sc_check(&sh.redo) {
+                    Some(Message::Redo)
+                } else if sc_check(&sh.duplicate_line) {
+                    Some(Message::DuplicateLine)
+                } else if sc_check(&sh.move_line_up) {
+                    Some(Message::MoveLineUp)
+                } else if sc_check(&sh.move_line_down) {
+                    Some(Message::MoveLineDown)
+                } else if sc_check(&sh.toggle_comment) {
+                    Some(Message::ToggleComment)
+                } else if sc_check(&sh.delete_line) {
+                    Some(Message::DeleteLine)
+                } else if sc_check(&sh.save_as) {
+                    Some(Message::SaveFileAs)
+                } else if sc_check(&sh.new_file) {
+                    Some(Message::NewFile)
+                } else if sc_check(&sh.save_file) {
+                    Some(Message::SaveFile)
+                } else if sc_check(&sh.open_file) {
+                    Some(Message::OpenFile)
+                } else if sc_check(&sh.close_file) {
+                    Some(Message::CloseFile)
+                } else if sc_check(&sh.find) {
+                    Some(Message::ToggleSearch)
+                } else if sc_check(&sh.select_all) {
+                    Some(Message::SelectAll)
+                } else if sc_check(&sh.format_code) {
+                    Some(Message::FormatFile)
+                } else if sc_check(&sh.goto_line) {
+                    Some(Message::OpenGotoLine)
+                } else if sc_check(&sh.toggle_sidebar) {
+                    Some(Message::ToggleSidebar)
+                } else if sc_check(&sh.quit) {
+                    Some(Message::Quit)
+                } else {
+                    None
+                };
+                if let Some(m) = msg {
+                    self.update(m)
+                } else {
+                    Command::none()
+                }
             }
             Message::DuplicateLine => {
                 if !self.show_search && !self.show_preferences {
@@ -882,22 +944,32 @@ impl Application for TinctaApp {
                         self.editor.language = lang;
                         self.is_dirty = true;
                         self.undo_new_group = true;
-                        return Command::perform(async move { line_idx }, Message::RestoreCursorLine);
+                        return Command::perform(
+                            async move { line_idx },
+                            Message::RestoreCursorLine,
+                        );
                     }
                 }
                 Command::none()
             }
             Message::OpenRecentFile(path) => {
                 if !path.exists() {
-                    self.config.recent_files.retain(|f| *f != path.to_string_lossy().as_ref());
+                    self.config
+                        .recent_files
+                        .retain(|f| *f != path.to_string_lossy().as_ref());
                     self.config.save();
-                    self.status_message = format!("{}: {}", t!("status.error"), t!("status.no_file"));
+                    self.status_message =
+                        format!("{}: {}", t!("status.error"), t!("status.no_file"));
                     return Command::none();
                 }
                 if let Some(current) = self.current_file.clone() {
                     self.file_cache.insert(
                         current,
-                        (self.editor.content.text().to_string(), self.editor.language.clone(), self.is_dirty),
+                        (
+                            self.editor.content.text().to_string(),
+                            self.editor.language.clone(),
+                            self.is_dirty,
+                        ),
                     );
                 }
                 self.undo_stack.clear();
@@ -918,11 +990,17 @@ impl Application for TinctaApp {
             Message::RestoreCursorLine(target) => {
                 let max = self.editor.content.line_count().saturating_sub(1);
                 let target = target.min(max);
-                self.editor.content.perform(text_editor::Action::Move(text_editor::Motion::DocumentStart));
+                self.editor.content.perform(text_editor::Action::Move(
+                    text_editor::Motion::DocumentStart,
+                ));
                 for _ in 0..target {
-                    self.editor.content.perform(text_editor::Action::Move(text_editor::Motion::Down));
+                    self.editor
+                        .content
+                        .perform(text_editor::Action::Move(text_editor::Motion::Down));
                 }
-                self.editor.content.perform(text_editor::Action::Move(text_editor::Motion::Home));
+                self.editor
+                    .content
+                    .perform(text_editor::Action::Move(text_editor::Motion::Home));
                 Command::none()
             }
             Message::EscapePressed => {
@@ -976,8 +1054,8 @@ impl Application for TinctaApp {
             })
         });
 
-        let autosave = iced::time::every(std::time::Duration::from_secs(5))
-            .map(|_| Message::AutoSave);
+        let autosave =
+            iced::time::every(std::time::Duration::from_secs(5)).map(|_| Message::AutoSave);
 
         iced::Subscription::batch([keys, autosave])
     }
@@ -1069,9 +1147,15 @@ impl Application for TinctaApp {
         let selection_info = self.editor.content.selection().map(|s| {
             let chars = s.chars().count();
             let lines = s.lines().count();
-            if lines > 1 { format!("{}L {}C", lines, chars) } else { format!("{}C", chars) }
+            if lines > 1 {
+                format!("{}L {}C", lines, chars)
+            } else {
+                format!("{}C", chars)
+            }
         });
-        let file_size = self.current_file.as_ref()
+        let file_size = self
+            .current_file
+            .as_ref()
             .filter(|p| !is_untitled(p))
             .and_then(|p| std::fs::metadata(p).ok())
             .map(|m| m.len());
@@ -1147,7 +1231,10 @@ impl Application for TinctaApp {
         if let Some(panel) = error_panel {
             col = col.push(panel);
         }
-        let content = col.push(status_bar).width(Length::Fill).height(Length::Fill);
+        let content = col
+            .push(status_bar)
+            .width(Length::Fill)
+            .height(Length::Fill);
 
         // Base layout wrapped in a container
         let base: Element<Message> = container(content)
@@ -1164,7 +1251,8 @@ impl Application for TinctaApp {
                 .map(|ext| crate::formatter::has_formatter(ext))
                 .unwrap_or(false);
             let lang_override_enabled = self.language_picker_enabled();
-            let dropdown = crate::menu_bar::dropdown_view(menu, &self.config, has_fmt, lang_override_enabled);
+            let dropdown =
+                crate::menu_bar::dropdown_view(menu, &self.config, has_fmt, lang_override_enabled);
             let x = crate::menu_bar::dropdown_x_offset(menu);
             iced_aw::floating_element::FloatingElement::new(base, dropdown)
                 .anchor(iced_aw::floating_element::Anchor::NorthWest)
@@ -1232,7 +1320,9 @@ impl TinctaApp {
                 }
                 let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("");
                 // Enabled if the extension is NOT recognized (user must override)
-                !crate::editor::SUPPORTED_LANGUAGES.iter().any(|(tok, _)| *tok == ext)
+                !crate::editor::SUPPORTED_LANGUAGES
+                    .iter()
+                    .any(|(tok, _)| *tok == ext)
             }
         }
     }
@@ -1244,7 +1334,9 @@ impl TinctaApp {
             column![
                 text("Tincta").size(24).style(p.accent),
                 text(format!("v{}", version)).size(15).style(p.text),
-                text(t!("about.tagline").to_string()).size(12).style(p.muted),
+                text(t!("about.tagline").to_string())
+                    .size(12)
+                    .style(p.muted),
                 button(text(t!("about.close").to_string()).size(13))
                     .padding([8, 24])
                     .on_press(Message::CloseOverlay)
@@ -1266,12 +1358,17 @@ impl TinctaApp {
         let p = tincta_theme::palette(dark);
         container(
             column![
-                text(t!("goto_line.title").to_string()).size(14).style(p.text),
-                text_input(&t!("goto_line.placeholder").to_string(), &self.goto_line_input)
-                    .on_input(Message::GotoLineInputChanged)
-                    .on_submit(Message::GotoLineSubmit)
-                    .padding(8)
-                    .size(14),
+                text(t!("goto_line.title").to_string())
+                    .size(14)
+                    .style(p.text),
+                text_input(
+                    &t!("goto_line.placeholder").to_string(),
+                    &self.goto_line_input
+                )
+                .on_input(Message::GotoLineInputChanged)
+                .on_submit(Message::GotoLineSubmit)
+                .padding(8)
+                .size(14),
                 row![
                     button(text(t!("goto_line.cancel").to_string()).size(13))
                         .padding([7, 16])
@@ -1355,9 +1452,10 @@ impl TinctaApp {
 
         container(
             column![
-                text(t!("language.title").to_string()).size(14).style(p.text),
-                scrollable(column(items).spacing(2).padding(4))
-                    .height(Length::Fixed(320.0)),
+                text(t!("language.title").to_string())
+                    .size(14)
+                    .style(p.text),
+                scrollable(column(items).spacing(2).padding(4)).height(Length::Fixed(320.0)),
             ]
             .spacing(10)
             .padding(16),
@@ -1376,35 +1474,109 @@ impl TinctaApp {
         let sc = &self.config.shortcuts;
 
         let rows_data: Vec<(ShortcutTarget, String, &crate::config::ShortcutConfig)> = vec![
-            (ShortcutTarget::Undo, t!("shortcuts.undo").to_string(), &sc.undo),
-            (ShortcutTarget::Redo, t!("shortcuts.redo").to_string(), &sc.redo),
-            (ShortcutTarget::DuplicateLine, t!("shortcuts.duplicate_line").to_string(), &sc.duplicate_line),
-            (ShortcutTarget::MoveLineUp, t!("shortcuts.move_line_up").to_string(), &sc.move_line_up),
-            (ShortcutTarget::MoveLineDown, t!("shortcuts.move_line_down").to_string(), &sc.move_line_down),
-            (ShortcutTarget::ToggleComment, t!("shortcuts.toggle_comment").to_string(), &sc.toggle_comment),
-            (ShortcutTarget::DeleteLine, t!("shortcuts.delete_line").to_string(), &sc.delete_line),
-            (ShortcutTarget::NewFile, t!("shortcuts.new_file").to_string(), &sc.new_file),
-            (ShortcutTarget::OpenFile, t!("shortcuts.open_file").to_string(), &sc.open_file),
-            (ShortcutTarget::SaveFile, t!("shortcuts.save_file").to_string(), &sc.save_file),
-            (ShortcutTarget::SaveAs, t!("shortcuts.save_as").to_string(), &sc.save_as),
-            (ShortcutTarget::CloseFile, t!("shortcuts.close_file").to_string(), &sc.close_file),
-            (ShortcutTarget::Find, t!("shortcuts.find").to_string(), &sc.find),
-            (ShortcutTarget::SelectAll, t!("shortcuts.select_all").to_string(), &sc.select_all),
-            (ShortcutTarget::FormatCode, t!("shortcuts.format_code").to_string(), &sc.format_code),
-            (ShortcutTarget::GotoLine, t!("shortcuts.goto_line").to_string(), &sc.goto_line),
-            (ShortcutTarget::ToggleSidebar, t!("shortcuts.toggle_sidebar").to_string(), &sc.toggle_sidebar),
-            (ShortcutTarget::Quit, t!("shortcuts.quit").to_string(), &sc.quit),
+            (
+                ShortcutTarget::Undo,
+                t!("shortcuts.undo").to_string(),
+                &sc.undo,
+            ),
+            (
+                ShortcutTarget::Redo,
+                t!("shortcuts.redo").to_string(),
+                &sc.redo,
+            ),
+            (
+                ShortcutTarget::DuplicateLine,
+                t!("shortcuts.duplicate_line").to_string(),
+                &sc.duplicate_line,
+            ),
+            (
+                ShortcutTarget::MoveLineUp,
+                t!("shortcuts.move_line_up").to_string(),
+                &sc.move_line_up,
+            ),
+            (
+                ShortcutTarget::MoveLineDown,
+                t!("shortcuts.move_line_down").to_string(),
+                &sc.move_line_down,
+            ),
+            (
+                ShortcutTarget::ToggleComment,
+                t!("shortcuts.toggle_comment").to_string(),
+                &sc.toggle_comment,
+            ),
+            (
+                ShortcutTarget::DeleteLine,
+                t!("shortcuts.delete_line").to_string(),
+                &sc.delete_line,
+            ),
+            (
+                ShortcutTarget::NewFile,
+                t!("shortcuts.new_file").to_string(),
+                &sc.new_file,
+            ),
+            (
+                ShortcutTarget::OpenFile,
+                t!("shortcuts.open_file").to_string(),
+                &sc.open_file,
+            ),
+            (
+                ShortcutTarget::SaveFile,
+                t!("shortcuts.save_file").to_string(),
+                &sc.save_file,
+            ),
+            (
+                ShortcutTarget::SaveAs,
+                t!("shortcuts.save_as").to_string(),
+                &sc.save_as,
+            ),
+            (
+                ShortcutTarget::CloseFile,
+                t!("shortcuts.close_file").to_string(),
+                &sc.close_file,
+            ),
+            (
+                ShortcutTarget::Find,
+                t!("shortcuts.find").to_string(),
+                &sc.find,
+            ),
+            (
+                ShortcutTarget::SelectAll,
+                t!("shortcuts.select_all").to_string(),
+                &sc.select_all,
+            ),
+            (
+                ShortcutTarget::FormatCode,
+                t!("shortcuts.format_code").to_string(),
+                &sc.format_code,
+            ),
+            (
+                ShortcutTarget::GotoLine,
+                t!("shortcuts.goto_line").to_string(),
+                &sc.goto_line,
+            ),
+            (
+                ShortcutTarget::ToggleSidebar,
+                t!("shortcuts.toggle_sidebar").to_string(),
+                &sc.toggle_sidebar,
+            ),
+            (
+                ShortcutTarget::Quit,
+                t!("shortcuts.quit").to_string(),
+                &sc.quit,
+            ),
         ];
 
-        let mut rows: Vec<Element<Message>> = vec![
-            row![
-                text(t!("shortcuts.action").to_string()).size(11).style(p.muted),
-                Space::with_width(Length::Fill),
-                text(t!("shortcuts.key").to_string()).size(11).style(p.muted),
-            ]
-            .padding([4, 12])
-            .into(),
-        ];
+        let mut rows: Vec<Element<Message>> = vec![row![
+            text(t!("shortcuts.action").to_string())
+                .size(11)
+                .style(p.muted),
+            Space::with_width(Length::Fill),
+            text(t!("shortcuts.key").to_string())
+                .size(11)
+                .style(p.muted),
+        ]
+        .padding([4, 12])
+        .into()];
 
         for (target, label_str, shortcut) in &rows_data {
             let target = *target;
@@ -1449,7 +1621,9 @@ impl TinctaApp {
         container(
             column![
                 row![
-                    text(t!("shortcuts.title").to_string()).size(14).style(p.text),
+                    text(t!("shortcuts.title").to_string())
+                        .size(14)
+                        .style(p.text),
                     Space::with_width(Length::Fill),
                     button(text("✕").size(12))
                         .padding([4, 8])
@@ -1460,8 +1634,7 @@ impl TinctaApp {
                         })),
                 ]
                 .align_items(Alignment::Center),
-                scrollable(column(rows).spacing(2))
-                    .height(Length::Fixed(380.0)),
+                scrollable(column(rows).spacing(2)).height(Length::Fixed(380.0)),
                 text(hint).size(11).style(p.muted),
             ]
             .spacing(10)
@@ -1493,7 +1666,11 @@ impl TinctaApp {
             .iter()
             .map(|path| {
                 let (content, language, dirty) = if self.current_file.as_ref() == Some(path) {
-                    (self.editor.content.text().to_string(), self.editor.language.clone(), self.is_dirty)
+                    (
+                        self.editor.content.text().to_string(),
+                        self.editor.language.clone(),
+                        self.is_dirty,
+                    )
                 } else if let Some((c, l, d)) = self.file_cache.get(path) {
                     (c.clone(), l.clone(), *d)
                 } else {
@@ -1501,7 +1678,11 @@ impl TinctaApp {
                 };
                 FileSession {
                     path: path.to_str().unwrap_or("").to_string(),
-                    content: if is_untitled(path) || dirty { Some(content) } else { None },
+                    content: if is_untitled(path) || dirty {
+                        Some(content)
+                    } else {
+                        None
+                    },
                     language,
                     dirty,
                 }
@@ -1510,7 +1691,9 @@ impl TinctaApp {
 
         Session {
             files,
-            active_file: self.current_file.as_ref()
+            active_file: self
+                .current_file
+                .as_ref()
                 .and_then(|p| p.to_str())
                 .map(|s| s.to_string()),
             untitled_counter: self.untitled_counter,
@@ -1541,7 +1724,8 @@ impl TinctaApp {
             } else {
                 String::new()
             };
-            self.file_cache.insert(path, (content, fs.language.clone(), fs.dirty));
+            self.file_cache
+                .insert(path, (content, fs.language.clone(), fs.dirty));
         }
 
         // Activate the previously active file
@@ -1566,8 +1750,8 @@ impl TinctaApp {
 
 pub fn comment_prefix(language: Option<&str>) -> &'static str {
     match language {
-        Some("rs") | Some("js") | Some("ts") | Some("jsx") | Some("tsx") |
-        Some("c") | Some("cpp") | Some("java") | Some("go") | Some("swift") | Some("kt") => "// ",
+        Some("rs") | Some("js") | Some("ts") | Some("jsx") | Some("tsx") | Some("c")
+        | Some("cpp") | Some("java") | Some("go") | Some("swift") | Some("kt") => "// ",
         Some("py") | Some("rb") | Some("sh") | Some("r") | Some("toml") | Some("yaml") => "# ",
         Some("sql") | Some("lua") => "-- ",
         _ => "// ",
@@ -1587,11 +1771,15 @@ pub fn duplicate_line(text: &str, line_idx: usize) -> String {
 pub fn move_line(text: &str, line_idx: usize, up: bool) -> (String, usize) {
     let mut lines: Vec<String> = text.split('\n').map(|l| l.to_string()).collect();
     if up {
-        if line_idx == 0 { return (text.to_string(), line_idx); }
+        if line_idx == 0 {
+            return (text.to_string(), line_idx);
+        }
         lines.swap(line_idx, line_idx - 1);
         (lines.join("\n"), line_idx - 1)
     } else {
-        if line_idx + 1 >= lines.len() { return (text.to_string(), line_idx); }
+        if line_idx + 1 >= lines.len() {
+            return (text.to_string(), line_idx);
+        }
         lines.swap(line_idx, line_idx + 1);
         (lines.join("\n"), line_idx + 1)
     }
@@ -1600,15 +1788,23 @@ pub fn move_line(text: &str, line_idx: usize, up: bool) -> (String, usize) {
 /// Returns (new_text, new_cursor_line).
 pub fn delete_line_op(text: &str, line_idx: usize) -> (String, usize) {
     let mut lines: Vec<String> = text.split('\n').map(|l| l.to_string()).collect();
-    if line_idx >= lines.len() { return (text.to_string(), line_idx); }
+    if line_idx >= lines.len() {
+        return (text.to_string(), line_idx);
+    }
     lines.remove(line_idx);
-    let new_line = if lines.is_empty() { 0 } else { line_idx.min(lines.len() - 1) };
+    let new_line = if lines.is_empty() {
+        0
+    } else {
+        line_idx.min(lines.len() - 1)
+    };
     (lines.join("\n"), new_line)
 }
 
 pub fn toggle_comment(text: &str, line_idx: usize, prefix: &str) -> String {
     let mut lines: Vec<String> = text.split('\n').map(|l| l.to_string()).collect();
-    if line_idx >= lines.len() { return text.to_string(); }
+    if line_idx >= lines.len() {
+        return text.to_string();
+    }
     let line = lines[line_idx].clone();
     let leading_ws: String = line.chars().take_while(|c| c.is_whitespace()).collect();
     let content = line.trim_start();
@@ -1622,7 +1818,13 @@ pub fn toggle_comment(text: &str, line_idx: usize, prefix: &str) -> String {
 
 pub fn indent_text(text: &str, indent: &str) -> String {
     text.split('\n')
-        .map(|line| if line.is_empty() { line.to_string() } else { format!("{}{}", indent, line) })
+        .map(|line| {
+            if line.is_empty() {
+                line.to_string()
+            } else {
+                format!("{}{}", indent, line)
+            }
+        })
         .collect::<Vec<_>>()
         .join("\n")
 }
@@ -1635,7 +1837,11 @@ pub fn dedent_text(text: &str, indent: &str) -> String {
             } else if line.starts_with('\t') {
                 line[1..].to_string()
             } else {
-                let n = line.chars().take(indent.len()).take_while(|c| *c == ' ').count();
+                let n = line
+                    .chars()
+                    .take(indent.len())
+                    .take_while(|c| *c == ' ')
+                    .count();
                 line[n..].to_string()
             }
         })
@@ -1645,14 +1851,20 @@ pub fn dedent_text(text: &str, indent: &str) -> String {
 
 pub fn dedent_line(text: &str, line_idx: usize, indent: &str) -> String {
     let mut lines: Vec<String> = text.split('\n').map(|l| l.to_string()).collect();
-    if line_idx >= lines.len() { return text.to_string(); }
+    if line_idx >= lines.len() {
+        return text.to_string();
+    }
     let line = lines[line_idx].clone();
     lines[line_idx] = if let Some(stripped) = line.strip_prefix(indent) {
         stripped.to_string()
     } else if line.starts_with('\t') {
         line[1..].to_string()
     } else {
-        let n = line.chars().take(indent.len()).take_while(|c| *c == ' ').count();
+        let n = line
+            .chars()
+            .take(indent.len())
+            .take_while(|c| *c == ' ')
+            .count();
         line[n..].to_string()
     };
     lines.join("\n")
@@ -1665,7 +1877,9 @@ pub fn untitled_path(n: u32) -> PathBuf {
 }
 
 pub fn is_untitled(path: &PathBuf) -> bool {
-    path.to_str().map(|s| s.starts_with("untitled://")).unwrap_or(false)
+    path.to_str()
+        .map(|s| s.starts_with("untitled://"))
+        .unwrap_or(false)
 }
 
 // ─── File I/O ────────────────────────────────────────────────────────────────
@@ -1676,32 +1890,88 @@ async fn open_file() -> Result<(PathBuf, String), String> {
         .add_filter(
             "All supported files",
             &[
-                "txt", "md", "markdown", "rst",
-                "rs", "toml", "lock",
-                "py", "pyw",
-                "js", "jsx", "mjs", "cjs",
-                "ts", "tsx",
-                "html", "htm", "xhtml",
-                "css", "scss", "sass", "less",
-                "json", "json5", "jsonc",
-                "yaml", "yml",
-                "xml", "svg", "plist",
-                "sh", "bash", "zsh", "fish", "ps1",
-                "c", "h", "cpp", "cc", "cxx", "hpp", "hh",
-                "java", "go", "rb", "php", "swift", "kt", "kts",
-                "sql", "lua", "r", "m", "vb", "cs",
-                "makefile", "dockerfile", "gitignore", "env",
-                "conf", "cfg", "ini", "properties",
+                "txt",
+                "md",
+                "markdown",
+                "rst",
+                "rs",
+                "toml",
+                "lock",
+                "py",
+                "pyw",
+                "js",
+                "jsx",
+                "mjs",
+                "cjs",
+                "ts",
+                "tsx",
+                "html",
+                "htm",
+                "xhtml",
+                "css",
+                "scss",
+                "sass",
+                "less",
+                "json",
+                "json5",
+                "jsonc",
+                "yaml",
+                "yml",
+                "xml",
+                "svg",
+                "plist",
+                "sh",
+                "bash",
+                "zsh",
+                "fish",
+                "ps1",
+                "c",
+                "h",
+                "cpp",
+                "cc",
+                "cxx",
+                "hpp",
+                "hh",
+                "java",
+                "go",
+                "rb",
+                "php",
+                "swift",
+                "kt",
+                "kts",
+                "sql",
+                "lua",
+                "r",
+                "m",
+                "vb",
+                "cs",
+                "makefile",
+                "dockerfile",
+                "gitignore",
+                "env",
+                "conf",
+                "cfg",
+                "ini",
+                "properties",
                 "log",
             ],
         )
         .add_filter("Text files", &["txt", "md", "rst", "log"])
-        .add_filter("Source code", &[
-            "rs", "py", "js", "ts", "jsx", "tsx", "c", "h", "cpp",
-            "java", "go", "rb", "php", "swift", "kt", "lua", "sql",
-        ])
-        .add_filter("Web files", &["html", "htm", "css", "scss", "json", "xml", "svg"])
-        .add_filter("Config files", &["toml", "yaml", "yml", "ini", "cfg", "conf", "env"])
+        .add_filter(
+            "Source code",
+            &[
+                "rs", "py", "js", "ts", "jsx", "tsx", "c", "h", "cpp", "java", "go", "rb", "php",
+                "swift", "kt", "lua", "sql",
+            ],
+        )
+        .add_filter(
+            "Web files",
+            &["html", "htm", "css", "scss", "json", "xml", "svg"],
+        )
+        .add_filter(
+            "Config files",
+            &["toml", "yaml", "yml", "ini", "cfg", "conf", "env"],
+        )
         .add_filter("All files", &["*"])
         .pick_file()
         .await

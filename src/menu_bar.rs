@@ -37,7 +37,10 @@ pub fn view(config: &Config, open: Option<TopMenu>) -> Element<'static, Message>
     .spacing(2)
     .padding([4, 10]);
 
-    container(bar).width(Length::Fill).style(theme::bar(dark)).into()
+    container(bar)
+        .width(Length::Fill)
+        .style(theme::bar(dark))
+        .into()
 }
 
 /// The floating dropdown panel for the active menu.
@@ -125,8 +128,18 @@ fn menu_items(
     match menu {
         TopMenu::File => {
             let mut items = vec![
-                item(t!("menu.file_new").to_string(), sc(&sh.new_file), dark, Message::NewFile),
-                item(t!("menu.file_open").to_string(), sc(&sh.open_file), dark, Message::OpenFile),
+                item(
+                    t!("menu.file_new").to_string(),
+                    sc(&sh.new_file),
+                    dark,
+                    Message::NewFile,
+                ),
+                item(
+                    t!("menu.file_open").to_string(),
+                    sc(&sh.open_file),
+                    dark,
+                    Message::OpenFile,
+                ),
             ];
 
             if !config.recent_files.is_empty() {
@@ -144,43 +157,133 @@ fn menu_items(
                 items.push(separator(dark));
             }
 
-            items.push(item(t!("menu.file_save").to_string(), sc(&sh.save_file), dark, Message::SaveFile));
-            items.push(item(t!("menu.file_save_as").to_string(), sc(&sh.save_as), dark, Message::SaveFileAs));
-            items.push(item(t!("menu.file_close").to_string(), sc(&sh.close_file), dark, Message::CloseFile));
-            items.push(item(t!("menu.file_quit").to_string(), sc(&sh.quit), dark, Message::Quit));
+            items.push(item(
+                t!("menu.file_save").to_string(),
+                sc(&sh.save_file),
+                dark,
+                Message::SaveFile,
+            ));
+            items.push(item(
+                t!("menu.file_save_as").to_string(),
+                sc(&sh.save_as),
+                dark,
+                Message::SaveFileAs,
+            ));
+            items.push(item(
+                t!("menu.file_close").to_string(),
+                sc(&sh.close_file),
+                dark,
+                Message::CloseFile,
+            ));
+            items.push(item(
+                t!("menu.file_quit").to_string(),
+                sc(&sh.quit),
+                dark,
+                Message::Quit,
+            ));
             items
         }
         TopMenu::Edit => {
             let format_item: Element<'static, Message> = if has_formatter {
-                item(t!("menu.edit_format").to_string(), sc(&sh.format_code), dark, Message::FormatFile)
+                item(
+                    t!("menu.edit_format").to_string(),
+                    sc(&sh.format_code),
+                    dark,
+                    Message::FormatFile,
+                )
             } else {
                 disabled_item(t!("menu.edit_format").to_string(), dark)
             };
             vec![
-                item(t!("menu.edit_undo").to_string(), sc(&sh.undo), dark, Message::Undo),
-                item(t!("menu.edit_redo").to_string(), sc(&sh.redo), dark, Message::Redo),
+                item(
+                    t!("menu.edit_undo").to_string(),
+                    sc(&sh.undo),
+                    dark,
+                    Message::Undo,
+                ),
+                item(
+                    t!("menu.edit_redo").to_string(),
+                    sc(&sh.redo),
+                    dark,
+                    Message::Redo,
+                ),
                 separator(dark),
-                item(t!("menu.edit_duplicate_line").to_string(), sc(&sh.duplicate_line), dark, Message::DuplicateLine),
-                item(t!("menu.edit_move_line_up").to_string(), sc(&sh.move_line_up), dark, Message::MoveLineUp),
-                item(t!("menu.edit_move_line_down").to_string(), sc(&sh.move_line_down), dark, Message::MoveLineDown),
-                item(t!("menu.edit_toggle_comment").to_string(), sc(&sh.toggle_comment), dark, Message::ToggleComment),
-                item(t!("menu.edit_delete_line").to_string(), sc(&sh.delete_line), dark, Message::DeleteLine),
+                item(
+                    t!("menu.edit_duplicate_line").to_string(),
+                    sc(&sh.duplicate_line),
+                    dark,
+                    Message::DuplicateLine,
+                ),
+                item(
+                    t!("menu.edit_move_line_up").to_string(),
+                    sc(&sh.move_line_up),
+                    dark,
+                    Message::MoveLineUp,
+                ),
+                item(
+                    t!("menu.edit_move_line_down").to_string(),
+                    sc(&sh.move_line_down),
+                    dark,
+                    Message::MoveLineDown,
+                ),
+                item(
+                    t!("menu.edit_toggle_comment").to_string(),
+                    sc(&sh.toggle_comment),
+                    dark,
+                    Message::ToggleComment,
+                ),
+                item(
+                    t!("menu.edit_delete_line").to_string(),
+                    sc(&sh.delete_line),
+                    dark,
+                    Message::DeleteLine,
+                ),
                 separator(dark),
-                item(t!("menu.edit_select_all").to_string(), sc(&sh.select_all), dark, Message::SelectAll),
-                item(t!("menu.edit_find").to_string(), sc(&sh.find), dark, Message::ToggleSearch),
-                item(t!("menu.edit_goto_line").to_string(), sc(&sh.goto_line), dark, Message::OpenGotoLine),
+                item(
+                    t!("menu.edit_select_all").to_string(),
+                    sc(&sh.select_all),
+                    dark,
+                    Message::SelectAll,
+                ),
+                item(
+                    t!("menu.edit_find").to_string(),
+                    sc(&sh.find),
+                    dark,
+                    Message::ToggleSearch,
+                ),
+                item(
+                    t!("menu.edit_goto_line").to_string(),
+                    sc(&sh.goto_line),
+                    dark,
+                    Message::OpenGotoLine,
+                ),
                 format_item,
-                item(t!("menu.edit_preferences").to_string(), None, dark, Message::TogglePreferences),
+                item(
+                    t!("menu.edit_preferences").to_string(),
+                    None,
+                    dark,
+                    Message::TogglePreferences,
+                ),
             ]
         }
         TopMenu::View => {
             let lang_item: Element<'static, Message> = if lang_picker_enabled {
-                item(t!("menu.view_language").to_string(), None, dark, Message::OpenLanguagePicker)
+                item(
+                    t!("menu.view_language").to_string(),
+                    None,
+                    dark,
+                    Message::OpenLanguagePicker,
+                )
             } else {
                 disabled_item(t!("menu.view_language").to_string(), dark)
             };
             vec![
-                item(t!("menu.view_sidebar").to_string(), sc(&sh.toggle_sidebar), dark, Message::ToggleSidebar),
+                item(
+                    t!("menu.view_sidebar").to_string(),
+                    sc(&sh.toggle_sidebar),
+                    dark,
+                    Message::ToggleSidebar,
+                ),
                 item(
                     if config.dark_mode {
                         t!("toolbar.light").to_string()
@@ -199,14 +302,26 @@ fn menu_items(
                     },
                     None,
                     dark,
-                    Message::Preferences(PreferencesMessage::ShowLineNumbersToggled(!config.show_line_numbers)),
+                    Message::Preferences(PreferencesMessage::ShowLineNumbersToggled(
+                        !config.show_line_numbers,
+                    )),
                 ),
                 lang_item,
             ]
         }
         TopMenu::Help => vec![
-            item(t!("menu.help_about").to_string(), None, dark, Message::About),
-            item(t!("menu.help_shortcuts").to_string(), None, dark, Message::OpenShortcuts),
+            item(
+                t!("menu.help_about").to_string(),
+                None,
+                dark,
+                Message::About,
+            ),
+            item(
+                t!("menu.help_shortcuts").to_string(),
+                None,
+                dark,
+                Message::OpenShortcuts,
+            ),
         ],
     }
 }

@@ -126,37 +126,44 @@ impl PreferencesState {
             close,
         ];
 
-        container(
-            scrollable(
-                column![
-                    header,
-                    section(t!("prefs.editor").to_string()),
-                    row![
-                        text(t!("prefs.font_size")).size(12),
-                        slider(8.0..=32.0, self.font_size, |v| {
-                            Message::Preferences(PreferencesMessage::FontSizeChanged(v))
-                        }),
-                        text(format!("{:.0}px", self.font_size)).size(12),
-                    ]
-                    .spacing(8),
-                    checkbox(t!("prefs.show_line_numbers"), self.show_line_numbers)
-                        .text_size(13)
-                        .on_toggle(|v| Message::Preferences(PreferencesMessage::ShowLineNumbersToggled(v))),
-                    checkbox(t!("prefs.auto_indent"), self.auto_indent)
-                        .text_size(13)
-                        .on_toggle(|v| Message::Preferences(PreferencesMessage::AutoIndentToggled(v))),
-                    checkbox(t!("prefs.autocomplete_brackets"), self.autocomplete_brackets)
-                        .text_size(13)
-                        .on_toggle(|v| Message::Preferences(PreferencesMessage::AutocompleteBracketsToggled(v))),
-                    checkbox(t!("prefs.autocomplete_quotes"), self.autocomplete_quotes)
-                        .text_size(13)
-                        .on_toggle(|v| Message::Preferences(PreferencesMessage::AutocompleteQuotesToggled(v))),
+        container(scrollable(
+            column![
+                header,
+                section(t!("prefs.editor").to_string()),
+                row![
+                    text(t!("prefs.font_size")).size(12),
+                    slider(8.0..=32.0, self.font_size, |v| {
+                        Message::Preferences(PreferencesMessage::FontSizeChanged(v))
+                    }),
+                    text(format!("{:.0}px", self.font_size)).size(12),
                 ]
-                .spacing(14)
-                .padding(18)
-                .width(Length::Fill)
-            )
-        )
+                .spacing(8),
+                checkbox(t!("prefs.show_line_numbers"), self.show_line_numbers)
+                    .text_size(13)
+                    .on_toggle(|v| Message::Preferences(
+                        PreferencesMessage::ShowLineNumbersToggled(v)
+                    )),
+                checkbox(t!("prefs.auto_indent"), self.auto_indent)
+                    .text_size(13)
+                    .on_toggle(|v| Message::Preferences(PreferencesMessage::AutoIndentToggled(v))),
+                checkbox(
+                    t!("prefs.autocomplete_brackets"),
+                    self.autocomplete_brackets
+                )
+                .text_size(13)
+                .on_toggle(|v| Message::Preferences(
+                    PreferencesMessage::AutocompleteBracketsToggled(v)
+                )),
+                checkbox(t!("prefs.autocomplete_quotes"), self.autocomplete_quotes)
+                    .text_size(13)
+                    .on_toggle(|v| Message::Preferences(
+                        PreferencesMessage::AutocompleteQuotesToggled(v)
+                    )),
+            ]
+            .spacing(14)
+            .padding(18)
+            .width(Length::Fill),
+        ))
         .width(300)
         .height(Length::Fill)
         .style(theme::panel(dark))

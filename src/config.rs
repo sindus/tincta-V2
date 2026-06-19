@@ -36,20 +36,41 @@ pub struct ShortcutConfig {
 
 impl ShortcutConfig {
     fn ctrl(key: &str) -> Self {
-        Self { ctrl: true, shift: false, alt: false, key: key.to_string() }
+        Self {
+            ctrl: true,
+            shift: false,
+            alt: false,
+            key: key.to_string(),
+        }
     }
     fn ctrl_shift(key: &str) -> Self {
-        Self { ctrl: true, shift: true, alt: false, key: key.to_string() }
+        Self {
+            ctrl: true,
+            shift: true,
+            alt: false,
+            key: key.to_string(),
+        }
     }
     fn alt(key: &str) -> Self {
-        Self { ctrl: false, shift: false, alt: true, key: key.to_string() }
+        Self {
+            ctrl: false,
+            shift: false,
+            alt: true,
+            key: key.to_string(),
+        }
     }
 
     pub fn display(&self) -> String {
         let mut s = String::new();
-        if self.ctrl { s.push_str("Ctrl+"); }
-        if self.shift { s.push_str("Shift+"); }
-        if self.alt { s.push_str("Alt+"); }
+        if self.ctrl {
+            s.push_str("Ctrl+");
+        }
+        if self.shift {
+            s.push_str("Shift+");
+        }
+        if self.alt {
+            s.push_str("Alt+");
+        }
         if self.key.len() == 1 {
             s.push_str(&self.key.to_uppercase());
         } else {
@@ -86,11 +107,21 @@ pub struct Shortcuts {
     pub delete_line: ShortcutConfig,
 }
 
-fn default_duplicate_line() -> ShortcutConfig { ShortcutConfig::ctrl_shift("d") }
-fn default_move_line_up() -> ShortcutConfig { ShortcutConfig::alt("ArrowUp") }
-fn default_move_line_down() -> ShortcutConfig { ShortcutConfig::alt("ArrowDown") }
-fn default_toggle_comment() -> ShortcutConfig { ShortcutConfig::ctrl("/") }
-fn default_delete_line() -> ShortcutConfig { ShortcutConfig::ctrl_shift("k") }
+fn default_duplicate_line() -> ShortcutConfig {
+    ShortcutConfig::ctrl_shift("d")
+}
+fn default_move_line_up() -> ShortcutConfig {
+    ShortcutConfig::alt("ArrowUp")
+}
+fn default_move_line_down() -> ShortcutConfig {
+    ShortcutConfig::alt("ArrowDown")
+}
+fn default_toggle_comment() -> ShortcutConfig {
+    ShortcutConfig::ctrl("/")
+}
+fn default_delete_line() -> ShortcutConfig {
+    ShortcutConfig::ctrl_shift("k")
+}
 
 impl Default for Shortcuts {
     fn default() -> Self {
@@ -187,7 +218,11 @@ impl Config {
 
     /// Add a file to the recent files list (max 10, no duplicates, no untitled).
     pub fn add_recent(&mut self, path: &PathBuf) {
-        if path.to_str().map(|s| s.starts_with("untitled://")).unwrap_or(false) {
+        if path
+            .to_str()
+            .map(|s| s.starts_with("untitled://"))
+            .unwrap_or(false)
+        {
             return;
         }
         let s = path.to_string_lossy().to_string();

@@ -1,7 +1,7 @@
 #[macro_use]
 extern crate rust_i18n;
 
-use iced::{Application, Settings, Size, window};
+use iced::{window, Application, Settings, Size};
 
 fn load_icon() -> Option<window::Icon> {
     let bytes = include_bytes!("assets/icon.png");
@@ -13,6 +13,7 @@ fn load_icon() -> Option<window::Icon> {
 mod app;
 mod config;
 mod editor;
+mod formatter;
 mod i18n;
 mod menu_bar;
 mod preferences;
@@ -20,7 +21,6 @@ mod search;
 mod session;
 mod sidebar;
 mod theme;
-mod formatter;
 
 i18n!("src/i18n");
 

@@ -34,11 +34,7 @@ pub fn ink_light() -> Theme {
     )
 }
 
-pub const ACCENT: Color = Color::from_rgb(
-    0x6E as f32 / 255.0,
-    0x5B as f32 / 255.0,
-    1.0,
-);
+pub const ACCENT: Color = Color::from_rgb(0x6E as f32 / 255.0, 0x5B as f32 / 255.0, 1.0);
 
 const fn rgb(r: u8, g: u8, b: u8) -> Color {
     Color::from_rgb(r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0)
@@ -127,7 +123,10 @@ pub fn card(dark: bool) -> impl Fn(&Theme) -> container::Appearance {
             radius: 8.0.into(),
         },
         shadow: Shadow {
-            color: Color { a: 0.35, ..Color::BLACK },
+            color: Color {
+                a: 0.35,
+                ..Color::BLACK
+            },
             offset: Vector::new(0.0, 6.0),
             blur_radius: 18.0,
         },

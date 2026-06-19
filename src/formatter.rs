@@ -3,9 +3,8 @@ use std::process::{Command, Stdio};
 
 fn command_for(ext: &str) -> Option<(String, Vec<String>)> {
     match ext {
-        "js" | "jsx" | "ts" | "tsx" | "css" | "scss" | "less"
-        | "html" | "htm" | "json" | "yaml" | "yml"
-        | "md" | "markdown" => Some((
+        "js" | "jsx" | "ts" | "tsx" | "css" | "scss" | "less" | "html" | "htm" | "json"
+        | "yaml" | "yml" | "md" | "markdown" => Some((
             "prettier".into(),
             vec!["--stdin-filepath".into(), format!("f.{}", ext)],
         )),
@@ -13,9 +12,18 @@ fn command_for(ext: &str) -> Option<(String, Vec<String>)> {
         "go" => Some(("gofmt".into(), vec![])),
         "py" => Some(("black".into(), vec!["-".into(), "--quiet".into()])),
         "sh" | "bash" | "zsh" | "fish" => Some(("shfmt".into(), vec![])),
-        "c" | "h" => Some(("clang-format".into(), vec!["--assume-filename=file.c".into()])),
-        "cpp" | "cc" | "cxx" | "hpp" | "hh" => Some(("clang-format".into(), vec!["--assume-filename=file.cpp".into()])),
-        "java" => Some(("clang-format".into(), vec!["--assume-filename=file.java".into()])),
+        "c" | "h" => Some((
+            "clang-format".into(),
+            vec!["--assume-filename=file.c".into()],
+        )),
+        "cpp" | "cc" | "cxx" | "hpp" | "hh" => Some((
+            "clang-format".into(),
+            vec!["--assume-filename=file.cpp".into()],
+        )),
+        "java" => Some((
+            "clang-format".into(),
+            vec!["--assume-filename=file.java".into()],
+        )),
         "xml" | "svg" | "plist" => Some(("xmllint".into(), vec!["--format".into(), "-".into()])),
         "toml" => Some(("taplo".into(), vec!["fmt".into(), "-".into()])),
         "lua" => Some(("stylua".into(), vec!["-".into()])),
@@ -52,10 +60,17 @@ pub async fn format(content: String, ext: String) -> Result<String, String> {
                 .stderr(Stdio::piped())
                 .spawn()
         })
-        .map_err(|_| format!("'{}' not found. Install it or ensure Node/npm is available.", cmd))?;
+        .map_err(|_| {
+            format!(
+                "'{}' not found. Install it or ensure Node/npm is available.",
+                cmd
+            )
+        })?;
 
     if let Some(mut stdin) = child.stdin.take() {
-        stdin.write_all(content.as_bytes()).map_err(|e| e.to_string())?;
+        stdin
+            .write_all(content.as_bytes())
+            .map_err(|e| e.to_string())?;
     }
 
     let output = child.wait_with_output().map_err(|e| e.to_string())?;
