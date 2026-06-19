@@ -49,6 +49,9 @@ case "$OS" in
             info "Installing (requires sudo)…"
             sudo dpkg -i "$TMP"
             rm -f "$TMP"
+            # Refresh icon cache so the app appears in the launcher immediately
+            sudo gtk-update-icon-cache -f -t /usr/share/icons/hicolor 2>/dev/null || true
+            sudo update-desktop-database /usr/share/applications 2>/dev/null || true
         else
             # Generic Linux: extract binary to /usr/local/bin
             TARBALL="tincta-${VERSION}-x86_64-linux.tar.gz"
