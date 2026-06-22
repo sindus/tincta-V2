@@ -322,6 +322,12 @@ fn menu_items(
                 dark,
                 Message::OpenShortcuts,
             ),
+            item(
+                t!("menu.help_check_updates").to_string(),
+                None,
+                dark,
+                Message::CheckForUpdate,
+            ),
         ],
     }
 }

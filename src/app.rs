@@ -31,6 +31,12 @@ pub enum ActiveOverlay {
     GotoLine,
     LanguagePicker,
     Shortcuts { capturing: Option<ShortcutTarget> },
+    UpdateChecking,
+    UpdateUpToDate,
+    UpdateAvailable(String),
+    UpdateDownloading,
+    UpdateInstalling,
+    UpdateError(String),
 }
 
 #[derive(Debug, Clone)]
@@ -99,6 +105,12 @@ pub enum Message {
     OpenRecentFile(PathBuf),
     // Deferred cursor line restore after with_text() (layout must run first)
     RestoreCursorLine(usize),
+    // Updater
+    CheckForUpdate,
+    UpdateChecked(Result<Option<String>, String>),
+    ConfirmInstallUpdate(String),
+    UpdateDownloaded(Result<std::path::PathBuf, String>),
+    UpdateInstalled(Result<(), String>),
 }
 
 pub struct SimpleEditApp {
@@ -1008,6 +1020,45 @@ impl Application for SimpleEditApp {
                 }
                 Command::none()
             }
+            Message::CheckForUpdate => {
+                self.overlay = ActiveOverlay::UpdateChecking;
+                Command::perform(crate::updater::check_for_update(), Message::UpdateChecked)
+            }
+            Message::UpdateChecked(Ok(Some(version))) => {
+                self.overlay = ActiveOverlay::UpdateAvailable(version);
+                Command::none()
+            }
+            Message::UpdateChecked(Ok(None)) => {
+                self.overlay = ActiveOverlay::UpdateUpToDate;
+                Command::none()
+            }
+            Message::UpdateChecked(Err(e)) => {
+                self.overlay = ActiveOverlay::UpdateError(e);
+                Command::none()
+            }
+            Message::ConfirmInstallUpdate(version) => {
+                self.overlay = ActiveOverlay::UpdateDownloading;
+                Command::perform(
+                    crate::updater::download_update(version),
+                    Message::UpdateDownloaded,
+                )
+            }
+            Message::UpdateDownloaded(Ok(path)) => {
+                self.overlay = ActiveOverlay::UpdateInstalling;
+                Command::perform(crate::updater::install_update(path), Message::UpdateInstalled)
+            }
+            Message::UpdateDownloaded(Err(e)) => {
+                self.overlay = ActiveOverlay::UpdateError(e);
+                Command::none()
+            }
+            Message::UpdateInstalled(Ok(())) => {
+                crate::updater::restart();
+                Command::none()
+            }
+            Message::UpdateInstalled(Err(e)) => {
+                self.overlay = ActiveOverlay::UpdateError(e);
+                Command::none()
+            }
         }
     }
 
@@ -1295,6 +1346,18 @@ impl Application for SimpleEditApp {
                     .on_esc(Message::CloseOverlay)
                     .into()
             }
+            ActiveOverlay::UpdateChecking
+            | ActiveOverlay::UpdateDownloading
+            | ActiveOverlay::UpdateInstalling
+            | ActiveOverlay::UpdateUpToDate
+            | ActiveOverlay::UpdateAvailable(_)
+            | ActiveOverlay::UpdateError(_) => {
+                let overlay = self.view_update_overlay(dark);
+                iced_aw::Modal::new(with_dropdown, Some(overlay))
+                    .backdrop(Message::CloseOverlay)
+                    .on_esc(Message::CloseOverlay)
+                    .into()
+            }
         }
     }
 
@@ -1351,6 +1414,109 @@ impl SimpleEditApp {
         .width(320)
         .style(se_theme::card(dark))
         .into()
+    }
+
+    fn view_update_overlay(&self, dark: bool) -> Element<'_, Message> {
+        let p = se_theme::palette(dark);
+
+        let content: Element<'_, Message> = match &self.overlay {
+            ActiveOverlay::UpdateChecking => column![
+                text(t!("update.checking").to_string()).size(14).style(p.text),
+            ]
+            .spacing(12)
+            .align_items(Alignment::Center)
+            .padding(36)
+            .into(),
+
+            ActiveOverlay::UpdateUpToDate => column![
+                text(t!("update.up_to_date").to_string())
+                    .size(16)
+                    .style(p.accent),
+                button(text(t!("about.close").to_string()).size(13))
+                    .padding([8, 24])
+                    .on_press(Message::CloseOverlay)
+                    .style(iced::theme::Button::custom(se_theme::GhostButton {
+                        dark,
+                        active: true,
+                    })),
+            ]
+            .spacing(12)
+            .align_items(Alignment::Center)
+            .padding(36)
+            .into(),
+
+            ActiveOverlay::UpdateAvailable(version) => {
+                let version = version.clone();
+                column![
+                    text(t!("update.available", version = version.as_str()).to_string())
+                        .size(16)
+                        .style(p.accent),
+                    row![
+                        button(text(t!("about.close").to_string()).size(13))
+                            .padding([8, 20])
+                            .on_press(Message::CloseOverlay)
+                            .style(iced::theme::Button::custom(se_theme::GhostButton {
+                                dark,
+                                active: false,
+                            })),
+                        button(
+                            text(t!("update.download_install").to_string()).size(13)
+                        )
+                        .padding([8, 20])
+                        .on_press(Message::ConfirmInstallUpdate(version))
+                        .style(iced::theme::Button::custom(se_theme::GhostButton {
+                            dark,
+                            active: true,
+                        })),
+                    ]
+                    .spacing(12),
+                ]
+                .spacing(16)
+                .align_items(Alignment::Center)
+                .padding(36)
+                .into()
+            }
+
+            ActiveOverlay::UpdateDownloading => column![
+                text(t!("update.downloading").to_string())
+                    .size(14)
+                    .style(p.text),
+            ]
+            .spacing(12)
+            .align_items(Alignment::Center)
+            .padding(36)
+            .into(),
+
+            ActiveOverlay::UpdateInstalling => column![
+                text(t!("update.installing").to_string())
+                    .size(14)
+                    .style(p.text),
+            ]
+            .spacing(12)
+            .align_items(Alignment::Center)
+            .padding(36)
+            .into(),
+
+            ActiveOverlay::UpdateError(e) => column![
+                text(t!("update.error").to_string()).size(14).style(p.accent),
+                text(e.clone()).size(12).style(p.muted),
+                button(text(t!("about.close").to_string()).size(13))
+                    .padding([8, 24])
+                    .on_press(Message::CloseOverlay)
+                    .style(iced::theme::Button::custom(se_theme::GhostButton {
+                        dark,
+                        active: false,
+                    })),
+            ]
+            .spacing(12)
+            .align_items(Alignment::Center)
+            .padding(36)
+            .into(),
+
+            _ => unreachable!(),
+        };
+
+        container(content).width(360).style(se_theme::card(dark)).into()
     }
 
     fn view_goto_line_overlay(&self, dark: bool) -> Element<'_, Message> {
