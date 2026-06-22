@@ -1,11 +1,11 @@
 # SimpleEdit
 
-[![CI](https://github.com/sindus/simpleedit/actions/workflows/ci.yml/badge.svg)](https://github.com/sindus/simpleedit/actions/workflows/ci.yml)
+[![CI](https://github.com/simpleeditdev/simpleedit/actions/workflows/ci.yml/badge.svg)](https://github.com/simpleeditdev/simpleedit/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 A fast, stable, cross-platform text editor for **macOS** and **Linux**. Built in Rust with [iced](https://github.com/iced-rs/iced).
 
-**[Website & Downloads](https://sindus.github.io/simpleedit)**
+**[Website & Downloads](https://simpleeditdev.github.io/simpleedit)**
 
 ---
 
@@ -28,7 +28,7 @@ A fast, stable, cross-platform text editor for **macOS** and **Linux**. Built in
 ### One-liner (Linux & macOS)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/sindus/simpleedit/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/simpleeditdev/simpleedit/main/install.sh | bash
 ```
 
 Detects your OS automatically, downloads the latest release, and installs it.
@@ -38,7 +38,7 @@ Detects your OS automatically, downloads the latest release, and installs it.
 ### macOS — Homebrew
 
 ```bash
-brew tap sindus/simpleedit
+brew tap simpleeditdev/simpleedit
 brew install simpleedit
 ```
 
@@ -54,13 +54,13 @@ brew uninstall simpleedit
 Download and install the latest `.deb` package:
 
 ```bash
-curl -fsSL https://api.github.com/repos/sindus/simpleedit/releases/latest \
+curl -fsSL https://api.github.com/repos/simpleeditdev/simpleedit/releases/latest \
   | grep '"browser_download_url"' | grep '\.deb' \
   | cut -d '"' -f 4 | xargs wget -q -O simpleedit.deb
 sudo dpkg -i simpleedit.deb && rm simpleedit.deb
 ```
 
-Or grab the file directly from the [Releases page](https://github.com/sindus/simpleedit/releases/latest).
+Or grab the file directly from the [Releases page](https://github.com/simpleeditdev/simpleedit/releases/latest).
 
 **Uninstall:**
 ```bash
@@ -74,8 +74,8 @@ sudo dpkg -r simpleedit
 ### Linux — tar.gz (any distro)
 
 ```bash
-VERSION=$(curl -fsSL https://api.github.com/repos/sindus/simpleedit/releases/latest | grep '"tag_name"' | head -1 | sed 's/.*"\(.*\)".*/\1/')
-curl -fsSL "https://github.com/sindus/simpleedit/releases/download/${VERSION}/simpleedit-${VERSION}-x86_64-linux.tar.gz" | tar xz
+VERSION=$(curl -fsSL https://api.github.com/repos/simpleeditdev/simpleedit/releases/latest | grep '"tag_name"' | head -1 | sed 's/.*"\(.*\)".*/\1/')
+curl -fsSL "https://github.com/simpleeditdev/simpleedit/releases/download/${VERSION}/simpleedit-${VERSION}-x86_64-linux.tar.gz" | tar xz
 sudo mv simpleedit /usr/local/bin/
 ```
 

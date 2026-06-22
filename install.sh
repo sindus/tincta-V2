@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO="sindus/simpleedit"
+REPO="simpleeditdev/simpleedit"
 
 # ── helpers ──────────────────────────────────────────────────────────────────
 info()  { echo "  $*"; }
@@ -74,7 +74,7 @@ case "$OS" in
 
         if command -v brew &>/dev/null; then
             info "Installing via Homebrew…"
-            brew tap sindus/simpleedit 2>/dev/null || true
+            brew tap simpleeditdev/simpleedit 2>/dev/null || true
             brew install simpleedit
         else
             # Manual install: extract binary to /usr/local/bin
