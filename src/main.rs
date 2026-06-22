@@ -32,11 +32,18 @@ fn main() -> iced::Result {
     };
     rust_i18n::set_locale(locale);
 
-    // Optional file path passed as first CLI argument: `simpleedit path/to/file`
     let file_arg = std::env::args()
         .nth(1)
         .filter(|a| !a.starts_with('-'))
         .map(std::path::PathBuf::from);
+
+    #[cfg(target_os = "linux")]
+    let platform_specific = window::settings::PlatformSpecific {
+        application_id: "simpleedit".to_string(),
+    };
+
+    #[cfg(not(target_os = "linux"))]
+    let platform_specific = window::settings::PlatformSpecific::default();
 
     app::SimpleEditApp::run(Settings {
         flags: file_arg,
@@ -45,9 +52,7 @@ fn main() -> iced::Result {
             min_size: Some(Size::new(600.0, 400.0)),
             resizable: true,
             icon: load_icon(),
-            platform_specific: window::settings::PlatformSpecific {
-                application_id: "simpleedit".to_string(),
-            },
+            platform_specific,
             ..Default::default()
         },
         ..Default::default()
