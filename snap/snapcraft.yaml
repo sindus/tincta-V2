@@ -1,8 +1,8 @@
-name: tincta
-version: '0.5.1'
+name: simpleedit
+version: '0.5.3'
 summary: A fast, stable, cross-platform text editor
 description: |
-  Tincta is a fast, stable text editor with syntax highlighting for 60+
+  SimpleEdit is a fast, stable text editor with syntax highlighting for 60+
   languages, a file sidebar, search/replace with regex, and full i18n support
   (English and French). Compatible with Ubuntu, Debian, and other Linux distros.
 
@@ -14,7 +14,7 @@ architectures:
   - build-on: amd64
 
 parts:
-  tincta:
+  simpleedit:
     plugin: rust
     source: .
     build-packages:
@@ -48,17 +48,17 @@ parts:
     plugin: dump
     source: snap/gui
     organize:
-      tincta.desktop: usr/share/applications/tincta.desktop
-      tincta.png: usr/share/icons/hicolor/256x256/apps/tincta.png
+      simpleedit.desktop: usr/share/applications/simpleedit.desktop
+      simpleedit.png: usr/share/icons/hicolor/256x256/apps/simpleedit.png
 
 layout:
   /usr/share/fonts:
     bind: $SNAP/usr/share/fonts
 
 apps:
-  tincta:
-    command: bin/tincta
-    desktop: usr/share/applications/tincta.desktop
+  simpleedit:
+    command: bin/simpleedit
+    desktop: usr/share/applications/simpleedit.desktop
     environment:
       WINIT_UNIX_BACKEND: x11
       XKB_CONFIG_ROOT: $SNAP/usr/share/X11/xkb

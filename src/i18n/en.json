@@ -1,5 +1,5 @@
 {
-  "app.title": "Tincta",
+  "app.title": "SimpleEdit",
   "app.untitled": "Untitled",
   "toolbar.dark": "Dark",
   "toolbar.light": "Light",
@@ -27,7 +27,7 @@
   "menu.edit_goto_line": "Go to line...",
   "menu.view_sidebar": "Toggle sidebar",
   "menu.view_language": "Set language...",
-  "menu.help_about": "About Tincta",
+  "menu.help_about": "About SimpleEdit",
   "menu.help_shortcuts": "Configure shortcuts...",
   "search.find_placeholder": "Find...",
   "search.replace_placeholder": "Replace with...",

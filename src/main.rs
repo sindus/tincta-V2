@@ -32,13 +32,13 @@ fn main() -> iced::Result {
     };
     rust_i18n::set_locale(locale);
 
-    // Optional file path passed as first CLI argument: `tincta path/to/file`
+    // Optional file path passed as first CLI argument: `simpleedit path/to/file`
     let file_arg = std::env::args()
         .nth(1)
         .filter(|a| !a.starts_with('-'))
         .map(std::path::PathBuf::from);
 
-    app::TinctaApp::run(Settings {
+    app::SimpleEditApp::run(Settings {
         flags: file_arg,
         window: window::Settings {
             size: Size::new(1200.0, 800.0),

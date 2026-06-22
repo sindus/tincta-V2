@@ -195,7 +195,7 @@ impl Default for Config {
 
 impl Config {
     pub fn config_path() -> Option<PathBuf> {
-        dirs::config_dir().map(|d| d.join("tincta").join("config.json"))
+        dirs::config_dir().map(|d| d.join("simpleedit").join("config.json"))
     }
 
     pub fn load() -> Self {

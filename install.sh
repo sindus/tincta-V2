@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO="sindus/tincta-V2"
+REPO="sindus/simpleedit"
 
 # ── helpers ──────────────────────────────────────────────────────────────────
 info()  { echo "  $*"; }
@@ -43,7 +43,7 @@ case "$OS" in
             [ -n "$DEB" ] || err "Could not find .deb asset in latest release."
 
             URL="https://github.com/${REPO}/releases/download/${VERSION}/${DEB}"
-            TMP=$(mktemp /tmp/tincta-XXXXXX.deb)
+            TMP=$(mktemp /tmp/simpleedit-XXXXXX.deb)
             info "Downloading ${DEB}…"
             curl -fsSL --progress-bar "$URL" -o "$TMP"
             info "Installing (requires sudo)…"
@@ -54,14 +54,14 @@ case "$OS" in
             sudo update-desktop-database /usr/share/applications 2>/dev/null || true
         else
             # Generic Linux: extract binary to /usr/local/bin
-            TARBALL="tincta-${VERSION}-x86_64-linux.tar.gz"
+            TARBALL="simpleedit-${VERSION}-x86_64-linux.tar.gz"
             URL="https://github.com/${REPO}/releases/download/${VERSION}/${TARBALL}"
             TMP=$(mktemp -d)
             info "Downloading ${TARBALL}…"
             curl -fsSL --progress-bar "$URL" | tar -xz -C "$TMP"
             info "Installing binary to /usr/local/bin (requires sudo)…"
-            sudo mv "$TMP/tincta" /usr/local/bin/tincta
-            sudo chmod +x /usr/local/bin/tincta
+            sudo mv "$TMP/simpleedit" /usr/local/bin/simpleedit
+            sudo chmod +x /usr/local/bin/simpleedit
             rm -rf "$TMP"
         fi
         ;;
@@ -74,18 +74,18 @@ case "$OS" in
 
         if command -v brew &>/dev/null; then
             info "Installing via Homebrew…"
-            brew tap sindus/tincta 2>/dev/null || true
-            brew install tincta-v2
+            brew tap sindus/simpleedit 2>/dev/null || true
+            brew install simpleedit
         else
             # Manual install: extract binary to /usr/local/bin
-            TARBALL="tincta-${VERSION}-aarch64-apple-darwin.tar.gz"
+            TARBALL="simpleedit-${VERSION}-aarch64-apple-darwin.tar.gz"
             URL="https://github.com/${REPO}/releases/download/${VERSION}/${TARBALL}"
             TMP=$(mktemp -d)
             info "Downloading ${TARBALL}…"
             curl -fsSL --progress-bar "$URL" | tar -xz -C "$TMP"
             info "Installing binary to /usr/local/bin (requires sudo)…"
-            sudo mv "$TMP/tincta" /usr/local/bin/tincta
-            sudo chmod +x /usr/local/bin/tincta
+            sudo mv "$TMP/simpleedit" /usr/local/bin/simpleedit
+            sudo chmod +x /usr/local/bin/simpleedit
             rm -rf "$TMP"
         fi
         ;;
@@ -96,11 +96,11 @@ case "$OS" in
 esac
 
 # ── done ─────────────────────────────────────────────────────────────────────
-ok "Tincta ${VERSION} installed successfully."
+ok "SimpleEdit ${VERSION} installed successfully."
 echo ""
-echo "  Run:        tincta"
-echo "  Open file:  tincta path/to/file"
+echo "  Run:        simpleedit"
+echo "  Open file:  simpleedit path/to/file"
 echo ""
-echo "  Uninstall (Ubuntu/Debian):  sudo apt remove tincta"
-echo "  Uninstall (macOS Homebrew): brew uninstall tincta-v2"
-echo "  Uninstall (manual):         sudo rm /usr/local/bin/tincta"
+echo "  Uninstall (Ubuntu/Debian):  sudo apt remove simpleedit"
+echo "  Uninstall (macOS Homebrew): brew uninstall simpleedit"
+echo "  Uninstall (manual):         sudo rm /usr/local/bin/simpleedit"

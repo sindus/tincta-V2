@@ -12,7 +12,7 @@ use crate::{
     preferences::{PreferencesMessage, PreferencesState},
     search::{SearchMessage, SearchState},
     sidebar::{SidebarAction, SidebarMessage, SidebarState},
-    theme as tincta_theme,
+    theme as se_theme,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -101,7 +101,7 @@ pub enum Message {
     RestoreCursorLine(usize),
 }
 
-pub struct TinctaApp {
+pub struct SimpleEditApp {
     config: Config,
     editor: EditorState,
     sidebar: SidebarState,
@@ -131,7 +131,7 @@ pub struct TinctaApp {
     undo_new_group: bool,
 }
 
-impl Application for TinctaApp {
+impl Application for SimpleEditApp {
     type Executor = executor::Default;
     type Message = Message;
     type Theme = Theme;
@@ -187,7 +187,7 @@ impl Application for TinctaApp {
             .and_then(|n| n.to_str())
             .unwrap_or(untitled.as_str());
         let dirty = if self.is_dirty { " •" } else { "" };
-        format!("Tincta — {}{}", file_name, dirty)
+        format!("SimpleEdit — {}{}", file_name, dirty)
     }
 
     fn update(&mut self, message: Message) -> Command<Message> {
@@ -1175,12 +1175,12 @@ impl Application for TinctaApp {
                 let header = row![
                     text(t!("panel.errors").to_string())
                         .size(11)
-                        .style(tincta_theme::muted_text(dark)),
+                        .style(se_theme::muted_text(dark)),
                     Space::with_width(Length::Fill),
-                    button(text("✕").size(11).style(tincta_theme::muted_text(dark)))
+                    button(text("✕").size(11).style(se_theme::muted_text(dark)))
                         .padding([2, 6])
                         .on_press(Message::CloseErrorPanel)
-                        .style(iced::theme::Button::custom(tincta_theme::GhostButton {
+                        .style(iced::theme::Button::custom(se_theme::GhostButton {
                             dark,
                             active: false,
                         })),
@@ -1204,7 +1204,7 @@ impl Application for TinctaApp {
                 Some(
                     container(column![header, body])
                         .width(Length::Fill)
-                        .style(tincta_theme::error_panel(dark))
+                        .style(se_theme::error_panel(dark))
                         .into(),
                 )
             } else {
@@ -1218,11 +1218,11 @@ impl Application for TinctaApp {
             let banner = container(
                 text(t!("status.formatting").to_string())
                     .size(12)
-                    .style(tincta_theme::accent_color()),
+                    .style(se_theme::accent_color()),
             )
             .width(Length::Fill)
             .padding([4, 14])
-            .style(tincta_theme::accent_banner(dark));
+            .style(se_theme::accent_banner(dark));
             column![menu_bar, banner, main_row]
         } else {
             column![menu_bar, main_row]
@@ -1300,16 +1300,16 @@ impl Application for TinctaApp {
 
     fn theme(&self) -> Theme {
         if self.config.dark_mode {
-            tincta_theme::ink_dark()
+            se_theme::ink_dark()
         } else {
-            tincta_theme::ink_light()
+            se_theme::ink_light()
         }
     }
 }
 
 // ─── Overlay views ──────────────────────────────────────────────────────────
 
-impl TinctaApp {
+impl SimpleEditApp {
     fn language_picker_enabled(&self) -> bool {
         match &self.current_file {
             None => true,
@@ -1327,11 +1327,11 @@ impl TinctaApp {
     }
 
     fn view_about_overlay(&self, dark: bool) -> Element<'_, Message> {
-        let p = tincta_theme::palette(dark);
+        let p = se_theme::palette(dark);
         let version = env!("CARGO_PKG_VERSION");
         container(
             column![
-                text("Tincta").size(24).style(p.accent),
+                text("SimpleEdit").size(24).style(p.accent),
                 text(format!("v{}", version)).size(15).style(p.text),
                 text(t!("about.tagline").to_string())
                     .size(12)
@@ -1339,7 +1339,7 @@ impl TinctaApp {
                 button(text(t!("about.close").to_string()).size(13))
                     .padding([8, 24])
                     .on_press(Message::CloseOverlay)
-                    .style(iced::theme::Button::custom(tincta_theme::GhostButton {
+                    .style(iced::theme::Button::custom(se_theme::GhostButton {
                         dark,
                         active: true,
                     })),
@@ -1349,12 +1349,12 @@ impl TinctaApp {
             .padding(36),
         )
         .width(320)
-        .style(tincta_theme::card(dark))
+        .style(se_theme::card(dark))
         .into()
     }
 
     fn view_goto_line_overlay(&self, dark: bool) -> Element<'_, Message> {
-        let p = tincta_theme::palette(dark);
+        let p = se_theme::palette(dark);
         container(
             column![
                 text(t!("goto_line.title").to_string())
@@ -1369,7 +1369,7 @@ impl TinctaApp {
                     button(text(t!("goto_line.cancel").to_string()).size(13))
                         .padding([7, 16])
                         .on_press(Message::CloseOverlay)
-                        .style(iced::theme::Button::custom(tincta_theme::GhostButton {
+                        .style(iced::theme::Button::custom(se_theme::GhostButton {
                             dark,
                             active: false,
                         })),
@@ -1377,7 +1377,7 @@ impl TinctaApp {
                     button(text(t!("goto_line.go").to_string()).size(13))
                         .padding([7, 16])
                         .on_press(Message::GotoLineSubmit)
-                        .style(iced::theme::Button::custom(tincta_theme::GhostButton {
+                        .style(iced::theme::Button::custom(se_theme::GhostButton {
                             dark,
                             active: true,
                         })),
@@ -1388,12 +1388,12 @@ impl TinctaApp {
             .padding(24),
         )
         .width(320)
-        .style(tincta_theme::card(dark))
+        .style(se_theme::card(dark))
         .into()
     }
 
     fn view_language_picker_overlay(&self, dark: bool) -> Element<'_, Message> {
-        let p = tincta_theme::palette(dark);
+        let p = se_theme::palette(dark);
         let current_lang = self.editor.language.as_deref().unwrap_or("");
 
         let mut items: Vec<Element<Message>> = vec![
@@ -1413,7 +1413,7 @@ impl TinctaApp {
             .padding([6, 12])
             .width(Length::Fill)
             .on_press(Message::SetLanguage(String::new()))
-            .style(iced::theme::Button::custom(tincta_theme::GhostButton {
+            .style(iced::theme::Button::custom(se_theme::GhostButton {
                 dark,
                 active: current_lang.is_empty(),
             }))
@@ -1438,7 +1438,7 @@ impl TinctaApp {
                 .padding([6, 12])
                 .width(Length::Fill)
                 .on_press(Message::SetLanguage(token.to_string()))
-                .style(iced::theme::Button::custom(tincta_theme::GhostButton {
+                .style(iced::theme::Button::custom(se_theme::GhostButton {
                     dark,
                     active: is_current,
                 }))
@@ -1457,7 +1457,7 @@ impl TinctaApp {
             .padding(16),
         )
         .width(260)
-        .style(tincta_theme::card(dark))
+        .style(se_theme::card(dark))
         .into()
     }
 
@@ -1466,7 +1466,7 @@ impl TinctaApp {
         dark: bool,
         capturing: Option<ShortcutTarget>,
     ) -> Element<'_, Message> {
-        let p = tincta_theme::palette(dark);
+        let p = se_theme::palette(dark);
         let sc = &self.config.shortcuts;
 
         let rows_data: Vec<(ShortcutTarget, String, &crate::config::ShortcutConfig)> = vec![
@@ -1591,7 +1591,7 @@ impl TinctaApp {
             )
             .padding([4, 10])
             .on_press(Message::StartCaptureShortcut(target))
-            .style(iced::theme::Button::custom(tincta_theme::GhostButton {
+            .style(iced::theme::Button::custom(se_theme::GhostButton {
                 dark,
                 active: is_capturing,
             }));
@@ -1624,7 +1624,7 @@ impl TinctaApp {
                     button(text("✕").size(12))
                         .padding([4, 8])
                         .on_press(Message::CloseOverlay)
-                        .style(iced::theme::Button::custom(tincta_theme::GhostButton {
+                        .style(iced::theme::Button::custom(se_theme::GhostButton {
                             dark,
                             active: false,
                         })),
@@ -1637,7 +1637,7 @@ impl TinctaApp {
             .padding(20),
         )
         .width(400)
-        .style(tincta_theme::card(dark))
+        .style(se_theme::card(dark))
         .into()
     }
 

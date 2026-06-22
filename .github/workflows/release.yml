@@ -7,7 +7,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  BINARY_NAME: tincta
+  BINARY_NAME: simpleedit
 
 jobs:
   build-macos:
@@ -32,12 +32,12 @@ jobs:
       - name: Package
         run: |
           cd target/aarch64-apple-darwin/release
-          tar czf tincta-${{ github.ref_name }}-aarch64-apple-darwin.tar.gz ${{ env.BINARY_NAME }}
-          mv tincta-*.tar.gz ${{ github.workspace }}/
+          tar czf simpleedit-${{ github.ref_name }}-aarch64-apple-darwin.tar.gz ${{ env.BINARY_NAME }}
+          mv simpleedit-*.tar.gz ${{ github.workspace }}/
       - uses: actions/upload-artifact@v4
         with:
-          name: tincta-macos-aarch64
-          path: tincta-*.tar.gz
+          name: simpleedit-macos-aarch64
+          path: simpleedit-*.tar.gz
 
   build-linux:
     name: Build Linux (x86_64)
@@ -63,8 +63,8 @@ jobs:
       - name: Package tarball
         run: |
           cd target/release
-          tar czf tincta-${{ github.ref_name }}-x86_64-linux.tar.gz ${{ env.BINARY_NAME }}
-          mv tincta-*.tar.gz ${{ github.workspace }}/
+          tar czf simpleedit-${{ github.ref_name }}-x86_64-linux.tar.gz ${{ env.BINARY_NAME }}
+          mv simpleedit-*.tar.gz ${{ github.workspace }}/
       - name: Build DEB
         run: |
           cargo install --force cargo-deb
@@ -72,9 +72,9 @@ jobs:
           cp target/debian/*.deb ${{ github.workspace }}/
       - uses: actions/upload-artifact@v4
         with:
-          name: tincta-linux
+          name: simpleedit-linux
           path: |
-            tincta-*.tar.gz
+            simpleedit-*.tar.gz
             *.deb
 
   release:
@@ -91,7 +91,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            tincta-*.tar.gz
+            simpleedit-*.tar.gz
             *.deb
           generate_release_notes: true
           draft: false

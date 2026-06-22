@@ -1,11 +1,11 @@
-# Tincta V2
+# SimpleEdit
 
-[![CI](https://github.com/sindus/tincta-V2/actions/workflows/ci.yml/badge.svg)](https://github.com/sindus/tincta-V2/actions/workflows/ci.yml)
+[![CI](https://github.com/sindus/simpleedit/actions/workflows/ci.yml/badge.svg)](https://github.com/sindus/simpleedit/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-A fast, stable, cross-platform text editor for **macOS** and **Linux**, inspired by [Tincta for macOS](https://github.com/CodingFriends/Tincta). Built in Rust with [iced](https://github.com/iced-rs/iced).
+A fast, stable, cross-platform text editor for **macOS** and **Linux**. Built in Rust with [iced](https://github.com/iced-rs/iced).
 
-**[Website & Downloads](https://sindus.github.io/tincta-V2)**
+**[Website & Downloads](https://sindus.github.io/simpleedit)**
 
 ---
 
@@ -28,7 +28,7 @@ A fast, stable, cross-platform text editor for **macOS** and **Linux**, inspired
 ### One-liner (Linux & macOS)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/sindus/tincta-V2/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/sindus/simpleedit/main/install.sh | bash
 ```
 
 Detects your OS automatically, downloads the latest release, and installs it.
@@ -38,13 +38,13 @@ Detects your OS automatically, downloads the latest release, and installs it.
 ### macOS — Homebrew
 
 ```bash
-brew tap sindus/tincta
-brew install tincta-v2
+brew tap sindus/simpleedit
+brew install simpleedit
 ```
 
 **Uninstall:**
 ```bash
-brew uninstall tincta-v2
+brew uninstall simpleedit
 ```
 
 ---
@@ -54,19 +54,19 @@ brew uninstall tincta-v2
 Download and install the latest `.deb` package:
 
 ```bash
-curl -fsSL https://api.github.com/repos/sindus/tincta-V2/releases/latest \
+curl -fsSL https://api.github.com/repos/sindus/simpleedit/releases/latest \
   | grep '"browser_download_url"' | grep '\.deb' \
-  | cut -d '"' -f 4 | xargs wget -q -O tincta.deb
-sudo dpkg -i tincta.deb && rm tincta.deb
+  | cut -d '"' -f 4 | xargs wget -q -O simpleedit.deb
+sudo dpkg -i simpleedit.deb && rm simpleedit.deb
 ```
 
-Or grab the file directly from the [Releases page](https://github.com/sindus/tincta-V2/releases/latest).
+Or grab the file directly from the [Releases page](https://github.com/sindus/simpleedit/releases/latest).
 
 **Uninstall:**
 ```bash
-sudo apt remove tincta
+sudo apt remove simpleedit
 # or
-sudo dpkg -r tincta
+sudo dpkg -r simpleedit
 ```
 
 ---
@@ -74,14 +74,14 @@ sudo dpkg -r tincta
 ### Linux — tar.gz (any distro)
 
 ```bash
-VERSION=$(curl -fsSL https://api.github.com/repos/sindus/tincta-V2/releases/latest | grep '"tag_name"' | head -1 | sed 's/.*"\(.*\)".*/\1/')
-curl -fsSL "https://github.com/sindus/tincta-V2/releases/download/${VERSION}/tincta-${VERSION}-x86_64-linux.tar.gz" | tar xz
-sudo mv tincta /usr/local/bin/
+VERSION=$(curl -fsSL https://api.github.com/repos/sindus/simpleedit/releases/latest | grep '"tag_name"' | head -1 | sed 's/.*"\(.*\)".*/\1/')
+curl -fsSL "https://github.com/sindus/simpleedit/releases/download/${VERSION}/simpleedit-${VERSION}-x86_64-linux.tar.gz" | tar xz
+sudo mv simpleedit /usr/local/bin/
 ```
 
 **Uninstall:**
 ```bash
-sudo rm /usr/local/bin/tincta
+sudo rm /usr/local/bin/simpleedit
 ```
 
 ---
@@ -94,7 +94,7 @@ sudo apt-get install libgtk-3-dev libxkbcommon-dev
 
 # Build & run
 cargo build --release
-./target/release/tincta
+./target/release/simpleedit
 ```
 
 ---
@@ -102,8 +102,8 @@ cargo build --release
 ## Usage
 
 ```bash
-tincta                  # open with last session
-tincta path/to/file     # open a specific file
+simpleedit                  # open with last session
+simpleedit path/to/file     # open a specific file
 ```
 
 ---
@@ -122,5 +122,3 @@ cargo fmt           # format source
 ## License
 
 MIT — see [LICENSE](LICENSE).
-
-Inspired by [Tincta](https://github.com/CodingFriends/Tincta) by CodingFriends.

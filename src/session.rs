@@ -19,7 +19,7 @@ pub struct Session {
 
 impl Session {
     fn path() -> Option<PathBuf> {
-        dirs::data_dir().map(|d| d.join("tincta").join("session.json"))
+        dirs::data_dir().map(|d| d.join("simpleedit").join("session.json"))
     }
 
     pub fn load() -> Self {

@@ -1,4 +1,4 @@
-//! Visual identity for Tincta: "Encre" (ink).
+//! Visual identity for SimpleEdit: "Encre" (ink).
 //!
 //! A single violet-ink accent against warm ink-black (dark) or paper (light)
 //! surfaces. Style helpers take `dark: bool` directly instead of deriving
@@ -10,7 +10,7 @@ use iced::{Background, Border, Color, Shadow, Theme, Vector};
 
 pub fn ink_dark() -> Theme {
     Theme::custom(
-        "Tincta Ink".to_string(),
+        "SimpleEdit Ink".to_string(),
         iced::theme::Palette {
             background: rgb(0x14, 0x15, 0x1A),
             text: rgb(0xEC, 0xEA, 0xE4),
@@ -23,7 +23,7 @@ pub fn ink_dark() -> Theme {
 
 pub fn ink_light() -> Theme {
     Theme::custom(
-        "Tincta Paper".to_string(),
+        "SimpleEdit Paper".to_string(),
         iced::theme::Palette {
             background: rgb(0xF7, 0xF5, 0xF0),
             text: rgb(0x1E, 0x1F, 0x25),
