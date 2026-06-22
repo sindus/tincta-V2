@@ -39,6 +39,7 @@ fn main() -> iced::Result {
         .map(std::path::PathBuf::from);
 
     app::SimpleEditApp::run(Settings {
+        id: Some("simpleedit".to_string()),
         flags: file_arg,
         window: window::Settings {
             size: Size::new(1200.0, 800.0),
