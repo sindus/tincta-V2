@@ -12,7 +12,6 @@ fn load_icon() -> Option<window::Icon> {
 
 mod app;
 mod config;
-mod updater;
 mod editor;
 mod formatter;
 mod i18n;
@@ -22,6 +21,7 @@ mod search;
 mod session;
 mod sidebar;
 mod theme;
+mod updater;
 
 i18n!("src/i18n");
 

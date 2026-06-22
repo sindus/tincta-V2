@@ -1,7 +1,6 @@
 use std::path::PathBuf;
 
-const RELEASES_API: &str =
-    "https://api.github.com/repos/simpleeditdev/simpleedit/releases/latest";
+const RELEASES_API: &str = "https://api.github.com/repos/simpleeditdev/simpleedit/releases/latest";
 
 fn is_newer(latest: &str, current: &str) -> bool {
     let parse = |s: &str| -> (u32, u32, u32) {
@@ -66,8 +65,10 @@ fn tmp_path(version: &str) -> PathBuf {
 
 #[cfg(target_os = "macos")]
 fn tmp_path(version: &str) -> PathBuf {
-    std::env::temp_dir()
-        .join(format!("simpleedit-v{}-aarch64-apple-darwin.tar.gz", version))
+    std::env::temp_dir().join(format!(
+        "simpleedit-v{}-aarch64-apple-darwin.tar.gz",
+        version
+    ))
 }
 
 pub async fn download_update(version: String) -> Result<PathBuf, String> {
@@ -151,8 +152,7 @@ fn install_blocking(path: &std::path::Path) -> Result<(), String> {
 }
 
 pub fn restart() {
-    let exe =
-        std::env::current_exe().unwrap_or_else(|_| PathBuf::from("simpleedit"));
+    let exe = std::env::current_exe().unwrap_or_else(|_| PathBuf::from("simpleedit"));
     let _ = std::process::Command::new(exe).spawn();
     std::process::exit(0);
 }

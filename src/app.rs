@@ -1045,7 +1045,10 @@ impl Application for SimpleEditApp {
             }
             Message::UpdateDownloaded(Ok(path)) => {
                 self.overlay = ActiveOverlay::UpdateInstalling;
-                Command::perform(crate::updater::install_update(path), Message::UpdateInstalled)
+                Command::perform(
+                    crate::updater::install_update(path),
+                    Message::UpdateInstalled,
+                )
             }
             Message::UpdateDownloaded(Err(e)) => {
                 self.overlay = ActiveOverlay::UpdateError(e);
@@ -1420,9 +1423,9 @@ impl SimpleEditApp {
         let p = se_theme::palette(dark);
 
         let content: Element<'_, Message> = match &self.overlay {
-            ActiveOverlay::UpdateChecking => column![
-                text(t!("update.checking").to_string()).size(14).style(p.text),
-            ]
+            ActiveOverlay::UpdateChecking => column![text(t!("update.checking").to_string())
+                .size(14)
+                .style(p.text),]
             .spacing(12)
             .align_items(Alignment::Center)
             .padding(36)
@@ -1459,15 +1462,13 @@ impl SimpleEditApp {
                                 dark,
                                 active: false,
                             })),
-                        button(
-                            text(t!("update.download_install").to_string()).size(13)
-                        )
-                        .padding([8, 20])
-                        .on_press(Message::ConfirmInstallUpdate(version))
-                        .style(iced::theme::Button::custom(se_theme::GhostButton {
-                            dark,
-                            active: true,
-                        })),
+                        button(text(t!("update.download_install").to_string()).size(13))
+                            .padding([8, 20])
+                            .on_press(Message::ConfirmInstallUpdate(version))
+                            .style(iced::theme::Button::custom(se_theme::GhostButton {
+                                dark,
+                                active: true,
+                            })),
                     ]
                     .spacing(12),
                 ]
@@ -1477,28 +1478,26 @@ impl SimpleEditApp {
                 .into()
             }
 
-            ActiveOverlay::UpdateDownloading => column![
-                text(t!("update.downloading").to_string())
-                    .size(14)
-                    .style(p.text),
-            ]
+            ActiveOverlay::UpdateDownloading => column![text(t!("update.downloading").to_string())
+                .size(14)
+                .style(p.text),]
             .spacing(12)
             .align_items(Alignment::Center)
             .padding(36)
             .into(),
 
-            ActiveOverlay::UpdateInstalling => column![
-                text(t!("update.installing").to_string())
-                    .size(14)
-                    .style(p.text),
-            ]
+            ActiveOverlay::UpdateInstalling => column![text(t!("update.installing").to_string())
+                .size(14)
+                .style(p.text),]
             .spacing(12)
             .align_items(Alignment::Center)
             .padding(36)
             .into(),
 
             ActiveOverlay::UpdateError(e) => column![
-                text(t!("update.error").to_string()).size(14).style(p.accent),
+                text(t!("update.error").to_string())
+                    .size(14)
+                    .style(p.accent),
                 text(e.clone()).size(12).style(p.muted),
                 button(text(t!("about.close").to_string()).size(13))
                     .padding([8, 24])
@@ -1516,7 +1515,10 @@ impl SimpleEditApp {
             _ => unreachable!(),
         };
 
-        container(content).width(360).style(se_theme::card(dark)).into()
+        container(content)
+            .width(360)
+            .style(se_theme::card(dark))
+            .into()
     }
 
     fn view_goto_line_overlay(&self, dark: bool) -> Element<'_, Message> {
